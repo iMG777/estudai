@@ -1,9 +1,11 @@
+// public/quiz.js
 document.getElementById("quizForm").addEventListener("submit", async function (e) {
   e.preventDefault();
 
   const resumo = document.getElementById("resumo")?.value.trim() || "";
   const topicos = document.getElementById("topicos")?.value.trim() || "";
 
+  // --- CORREÇÃO AQUI: aspas e parênteses corretos ---
   const dificuldade = Array.from(document.querySelectorAll("input[name='dificuldade']:checked")).map(el => el.value);
   const tipoPergunta = Array.from(document.querySelectorAll("input[name='tipo']:checked")).map(el => el.value);
 
@@ -11,7 +13,6 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
   perguntasDiv.innerHTML = "<p>Gerando perguntas...</p>";
   perguntasDiv.style.pointerEvents = "auto";
   perguntasDiv.style.opacity = "1";
-
 
   try {
     const response = await fetch("/api/generate-questions", {
@@ -48,10 +49,6 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
       label.style.borderRadius = "6px";
       label.style.marginBottom = "4px";
       label.style.userSelect = "none";
-      label.style.transition = "background 0.2s";
-
-      label.addEventListener("mouseenter", () => label.style.backgroundColor = "transparent");
-      label.addEventListener("mouseleave", () => label.style.backgroundColor = "transparent");
 
       const input = document.createElement("input");
       input.type = "radio";
@@ -66,8 +63,10 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
       return li;
     };
 
+    // Renderiza perguntas
     data.questions.forEach((q, idx) => {
       const item = document.createElement("li");
+      item.dataset.index = idx;
 
       if (typeof q === "string") {
         item.textContent = q;
@@ -86,19 +85,16 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
             ul.appendChild(criarRadio(`pergunta_${idx}`, alt));
           });
           item.appendChild(ul);
-        }
-
-        else if (q.tipo === "vf") {
+        } else if (q.tipo === "vf") {
           const ul = document.createElement("ul");
           ["Verdadeiro", "Falso"].forEach((alt) => {
             ul.appendChild(criarRadio(`pergunta_${idx}`, alt));
           });
           item.appendChild(ul);
-        }
-
-        else if (q.tipo === "discursiva") {
+        } else if (q.tipo === "discursiva") {
           const textarea = document.createElement("textarea");
           textarea.placeholder = "Digite sua resposta...";
+          textarea.name = `resposta_${idx}`; // <--- nome único para recuperar depois
           textarea.style.width = "100%";
           textarea.style.padding = "6px";
           textarea.style.marginTop = "4px";
@@ -120,6 +116,7 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
 
     perguntasDiv.appendChild(lista);
 
+    // Botão mostrar respostas
     const showBtn = document.createElement("button");
     showBtn.type = "button";
     showBtn.textContent = "Mostrar Respostas";
@@ -129,8 +126,86 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
       respostas.forEach(r => r.style.display = "block");
       showBtn.remove();
     });
-
     perguntasDiv.appendChild(showBtn);
+
+    // Botão enviar respostas
+    const submitBtn = document.createElement("button");
+    submitBtn.type = "button";
+    submitBtn.textContent = "Enviar Respostas";
+    submitBtn.style.marginTop = "12px";
+    submitBtn.addEventListener("click", async () => {
+      const respostas = [];
+
+      data.questions.forEach((q, idx) => {
+        let respostaUsuario = null;
+
+        if (q.tipo === "multipla" || q.tipo === "vf") {
+          const marcado = document.querySelector(`input[name="pergunta_${idx}"]:checked`);
+          if (marcado) respostaUsuario = marcado.value;
+        } else if (q.tipo === "discursiva") {
+          const textarea = document.querySelector(`textarea[name="resposta_${idx}"]`);
+          if (textarea) respostaUsuario = textarea.value.trim();
+        }
+
+        respostas.push({
+          index: idx,
+          tipo: q.tipo,
+          pergunta: q.pergunta,
+          alternativas: q.alternativas || null,
+          respostaCorreta: q.resposta,
+          respostaUsuario
+        });
+      });
+
+      try {
+        const response = await fetch("/api/submit-answers", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ respostas })
+        });
+
+        if (!response.ok) {
+          const txt = await response.text();
+          throw new Error(`Erro na correção: ${response.status} - ${txt}`);
+        }
+
+        const result = await response.json();
+        // Mostra resultado resumido + lista com questões erradas/certas
+        const resultadoDiv = document.createElement("div");
+        resultadoDiv.style.marginTop = "12px";
+        resultadoDiv.innerHTML = `<strong>Resultado:</strong> ✅ Acertos: ${result.acertos} / ${result.total} — ❌ Erros: ${result.erros}`;
+
+        // Detalhes por questão (opcional, útil para debug)
+        const detalhesUL = document.createElement("ul");
+        if (result.details && Array.isArray(result.details)) {
+          result.details.forEach(d => {
+            const li = document.createElement("li");
+            const sim = (typeof d.similarity === "number") ? d.similarity : (d.similarity ?? 0);
+            li.innerHTML = `Q${(typeof d.index === "number" ? d.index : 0) + 1}: <strong>${d.acertou ? "Correta" : "Incorreta"}</strong> — Sua resposta: "${d.usuario}"`;
+
+            if (!d.acertou) li.style.color = "crimson";
+            detalhesUL.appendChild(li);
+          });
+        } else {
+          const li = document.createElement("li");
+          li.textContent = "Detalhes não disponíveis.";
+          detalhesUL.appendChild(li);
+        }
+
+        resultadoDiv.appendChild(detalhesUL);
+
+        // remove antigo resultado, se houver
+        const existing = document.getElementById("resultado-geral");
+        if (existing) existing.remove();
+        resultadoDiv.id = "resultado-geral";
+        perguntasDiv.appendChild(resultadoDiv);
+
+      } catch (err) {
+        console.error("Erro ao enviar respostas:", err);
+        alert("Erro ao enviar respostas. Veja console (F12).");
+      }
+    });
+    perguntasDiv.appendChild(submitBtn);
 
   } catch (err) {
     console.error("Erro:", err);

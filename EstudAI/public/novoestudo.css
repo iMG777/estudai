@@ -81,13 +81,12 @@ main {
 }
 
 #stopwatch {
-    background-color: #262626;
+    background-color: #222222;
     padding: 1.5rem;
     border-radius: 8px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    border: 2px solid #fff;
 }
 
 #timer {
@@ -96,11 +95,11 @@ main {
     justify-content: center;
     font-weight: 600;
     font-size: 24px;
-    background-color: #262626;
-    color: #9f6bff;
+    background-color: #222222;
+    color: #fff;
     width: 250px;
     height: 250px;
-    border: 3px solid #fff;
+    border: 3px solid #9f6bff;
     border-radius: 100%;
     margin-bottom: 1.2rem;
 }
@@ -125,6 +124,8 @@ main {
 
 #actions button:hover {
     background-color: #c4b5fd;
+    transform: translateY(3px);
+    box-shadow: 0 12px 20px rgba(0, 0, 0, 0.8);
 }
 
 #marks-list{
