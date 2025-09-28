@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EstudAI</title>
+    <link rel="shortcut icon" href="assets/logokbeca.ico" type="image/x-icon">
+    <link rel="stylesheet" href="novoestudo.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+    <div class="home-bar">
+      <nav>
+        <a href="index.html" class="home">INICIO</a>
+        <a href="dashboard.html">DASHBOARD</a>
+        <a href="#">SOBRE</a>
+        <h1 class="logo">EstudAI</h1>
+        <a href="index.html" class="btn-logo"></a>
+      </nav>
+    </div>
+
+    <main>
+        <div id="stopwatch">
+        <h2 id="timer">00:00:00:00</h2>
+
+        <div id="actions">
+            <button id="reset">
+                <i class="fa-solid fa-rotate-right"></i>
+            </button>
+
+            <button id="power" action="start">
+                <i class="fa-solid fa-play"></i>
+            </button>
+
+            <button id="mark">
+                <i class="fa-solid fa-flag"></i>
+            </button>
+        </div>
+
+        <div id="marks-list"></div>
+    </div>
+
+    <a href="quiz.html" class="encerrar"> Encerrar Estudo</a>
+    </main>
+
+    <script src="script-site.js"></script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EstudAI</title>
+    <link rel="stylesheet" href="quiz.css">
+    <link rel="shortcut icon" href="assets/logokbeca.ico" type="image/x-icon">
+</head>
+<body>
+    <div class="home-bar">
+      <nav>
+        <a href="index.html" class="home">INICIO</a>
+        <a href="dashboard.html">DASHBOARD</a>
+        <a href="#">SOBRE</a>
+        <h1 class="logo">EstudAI</h1>
+        <a href="index.html" class="btn-logo"></a>
+      </nav>
+    </div>
+
+    <main>
+      <h1>Conte sobre o que você estudou</h1>
+      <p class="subtitle">Seja específico nas respostas para receber perguntas específicas.</p>
+
+      <form id="quizForm">
+        <label for="resumo">Resumo do conteúdo estudado:</label>
+        <textarea id="resumo" placeholder="Exemplo: Estudei o ciclo celular, focando nas fases G1, S, G2 e mitose..."></textarea>
+
+        <label for="topicos">Pontos principais:</label>
+        <textarea id="topicos" placeholder="Exemplo: Interfase, replicação do DNA, cromossomos..."></textarea>
+
+        <fieldset class="checkbox-group">
+          <legend>Nível de dificuldade:</legend>
+          <label><input type="checkbox" name="dificuldade" value="facil"> Fácil</label>
+          <label><input type="checkbox" name="dificuldade" value="medio"> Médio</label>
+          <label><input type="checkbox" name="dificuldade" value="dificil"> Difícil</label>
+        </fieldset>
+
+        <fieldset class="checkbox-group">
+          <legend>Tipo de pergunta:</legend>
+          <label><input type="checkbox" name="tipo" value="multipla"> Múltipla escolha</label>
+          <label><input type="checkbox" name="tipo" value="vf"> Verdadeiro ou falso</label>
+          <label><input type="checkbox" name="tipo" value="discursiva"> Discursiva</label>
+        </fieldset>
+
+        <button type="submit" class="btn-gerar">Gerar Perguntas</button>
+      </form>
+    </main>
+
+    <div id="perguntas"></div>
+
+<script src="quiz.js"></script>
+</body>
+</html>
