@@ -13,16 +13,17 @@
         <div id="login">
             <h1 class="sign-in">Sign Up</h1>
 
-            <div class="social-login">
-                <a href="#" class="icon-social"><i class="fab fa-google"></i></a>
-                <a href="#" class="icon-social"><i class="fab fa-facebook-f"></i></a>
+            <div id="sign-in">
+            <input type="text" id="username" name="username" placeholder="Nome de Usuário" required>
+            <span id="error-username" class="error-msg"></span>
+
+            <input type="email" id="email" name="email" placeholder="Email" required>
+            <span id="error-email" class="error-msg"></span>
+
+            <input type="password" id="password" name="password" placeholder="Senha" required>
+            <span id="error-password" class="error-msg"></span>
             </div>
 
-            <div id="sign-in">
-                <input type="text" id="username" name="username" placeholder="Nome de Usuário" required>
-                <input type="email" id="email" name="email" placeholder="Email" required>
-                <input type="password" id="password" name="password" placeholder="Senha" required>
-            </div>
 
             <button type="submit" class="criar">CRIAR</button>
         </div>

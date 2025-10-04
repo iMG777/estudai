@@ -123,3 +123,10 @@ input[type="password"]::-ms-reveal {
   color: #9f6bff;
 }
 
+.error-msg {
+  color: #ff4d4d;
+  font-size: 12px;
+  margin-top: 5px;
+  display: block;
+  text-align: left;
+}
