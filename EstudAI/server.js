@@ -300,6 +300,32 @@ app.get("/admin/usuarios", async (req, res) => {
   }
 });
 
+// rota temporária para criar tabelas
+app.get("/admin/criar-tabelas", async (req, res) => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS usuarios (
+        id SERIAL PRIMARY KEY,
+        nome VARCHAR(255) NOT NULL,
+        email VARCHAR(255) NOT NULL UNIQUE,
+        senha VARCHAR(255) NOT NULL,
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE IF NOT EXISTS perguntas (
+        id SERIAL PRIMARY KEY,
+        pergunta TEXT NOT NULL,
+        resposta TEXT NOT NULL,
+        tipo VARCHAR(50) NOT NULL,
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    res.send("Tabelas criadas com sucesso!");
+  } catch (err) {
+    console.error("Erro ao criar tabelas:", err);
+    res.status(500).send("Erro ao criar tabelas");
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
 });
