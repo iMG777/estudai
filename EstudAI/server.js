@@ -264,6 +264,42 @@ app.get("/admin/perguntas", async (req, res) => {
   }
 });
 
+app.get("/admin/usuarios", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT id, nome, email, criado_em FROM usuarios ORDER BY id ASC");
+    const usuarios = result.rows;
+
+    // cria um HTML simples
+    let html = `
+      <h1>Usuários Cadastrados</h1>
+      <table border="1" cellpadding="5" cellspacing="0">
+        <tr>
+          <th>ID</th>
+          <th>Nome</th>
+          <th>Email</th>
+          <th>Criado em</th>
+        </tr>
+    `;
+
+    usuarios.forEach(u => {
+      html += `
+        <tr>
+          <td>${u.id}</td>
+          <td>${u.nome}</td>
+          <td>${u.email}</td>
+          <td>${u.criado_em}</td>
+        </tr>
+      `;
+    });
+
+    html += "</table>";
+    res.send(html);
+  } catch (err) {
+    console.error("Erro ao buscar usuários:", err);
+    res.status(500).send("Erro ao acessar o banco de dados");
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
 });
