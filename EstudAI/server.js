@@ -42,29 +42,120 @@ function similaridade(a, b) {
   return inter.length / union.size;
 }
 
-/** Rota temporária para criar tabelas */
-app.get("/admin/criar-tabelas", async (req, res) => {
+/** Helper para extrair JSON de texto bruto */
+function parseQuestionsFromText(text) {
+  if (!text) return [];
   try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS usuarios (
-        id SERIAL PRIMARY KEY,
-        nome VARCHAR(255) NOT NULL,
-        email VARCHAR(255) NOT NULL UNIQUE,
-        senha VARCHAR(255) NOT NULL,
-        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-      CREATE TABLE IF NOT EXISTS perguntas (
-        id SERIAL PRIMARY KEY,
-        pergunta TEXT NOT NULL,
-        resposta TEXT NOT NULL,
-        tipo VARCHAR(50) NOT NULL,
-        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-    res.send("Tabelas criadas com sucesso!");
+    const maybe = text.replace(/```json/i, "").replace(/```/g, "").trim();
+    const j = JSON.parse(maybe);
+    if (Array.isArray(j.questions)) return j.questions;
+  } catch (e) {
+    const start = text.indexOf("{");
+    const end = text.lastIndexOf("}");
+    if (start !== -1 && end !== -1 && end > start) {
+      const sub = text.substring(start, end + 1);
+      try {
+        const j2 = JSON.parse(sub);
+        if (Array.isArray(j2.questions)) return j2.questions;
+      } catch {}
+    }
+  }
+  return [];
+}
+
+/** Rotas do backend */
+
+/** Signup - cria usuário */
+app.post("/api/signup", async (req, res) => {
+  try {
+    const { nome, email, senha } = req.body;
+
+    if (!nome || !email || !senha) {
+      return res.status(400).json({ error: "Todos os campos são obrigatórios" });
+    }
+
+    // Verifica se email ou nome já existem
+    const exists = await pool.query(
+      "SELECT id FROM usuarios WHERE email = $1 OR nome = $2",
+      [email, nome]
+    );
+    if (exists.rows.length > 0) {
+      return res.status(400).json({ error: "Email ou nome de usuário já cadastrado" });
+    }
+
+    const result = await pool.query(
+      "INSERT INTO usuarios (nome, email, senha) VALUES ($1, $2, $3) RETURNING id, nome, email, criado_em",
+      [nome, email, senha]
+    );
+
+    res.status(201).json({ message: "Usuário criado com sucesso!", usuario: result.rows[0] });
   } catch (err) {
-    console.error("Erro ao criar tabelas:", err);
-    res.status(500).send("Erro ao criar tabelas");
+    console.error("Erro ao criar usuário:", err);
+    res.status(500).json({ error: "Erro ao criar usuário" });
+  }
+});
+
+/** Lista todos os usuários */
+app.get("/admin/usuarios", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT id, nome, email, criado_em FROM usuarios ORDER BY id ASC");
+    let html = `
+      <h1>Usuários Cadastrados</h1>
+      <table border="1" cellpadding="5" cellspacing="0">
+        <tr>
+          <th>ID</th>
+          <th>Nome</th>
+          <th>Email</th>
+          <th>Criado em</th>
+        </tr>
+    `;
+    result.rows.forEach(u => {
+      html += `
+        <tr>
+          <td>${u.id}</td>
+          <td>${u.nome}</td>
+          <td>${u.email}</td>
+          <td>${u.criado_em}</td>
+        </tr>
+      `;
+    });
+    html += "</table>";
+    res.send(html);
+  } catch (err) {
+    console.error("Erro ao buscar usuários:", err);
+    res.status(500).send("Erro ao acessar o banco de dados");
+  }
+});
+
+/** Lista todas as perguntas */
+app.get("/admin/perguntas", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM perguntas ORDER BY id ASC");
+    let html = `
+      <h1>Perguntas no Banco de Dados</h1>
+      <table border="1" cellpadding="5" cellspacing="0">
+        <tr>
+          <th>ID</th>
+          <th>Pergunta</th>
+          <th>Resposta</th>
+          <th>Tipo</th>
+        </tr>
+    `;
+    result.rows.forEach(row => {
+      html += `
+        <tr>
+          <td>${row.id}</td>
+          <td>${row.pergunta}</td>
+          <td>${row.resposta}</td>
+          <td>${row.tipo}</td>
+        </tr>
+      `;
+    });
+    html += "</table>";
+    res.send(html);
+  } catch (err) {
+    console.error("Erro ao buscar perguntas:", err);
+    res.status(500).send("Erro ao acessar o banco de dados");
   }
 });
 
@@ -98,9 +189,7 @@ Tópicos: ${topicos}
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-        }),
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
       }
     );
 
@@ -112,7 +201,6 @@ Tópicos: ${topicos}
     const data = await response.json();
     const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || JSON.stringify(data);
     const questions = parseQuestionsFromText(rawText);
-
     res.json({ questions, rawText });
   } catch (err) {
     console.error("Erro em /api/generate-questions:", err);
@@ -133,13 +221,11 @@ app.post("/api/submit-answers", (req, res) => {
       const idx = r.index ?? null;
       const corretaRaw = (r.respostaCorreta ?? "").toString();
       const usuarioRaw = (r.respostaUsuario ?? "").toString();
-
       const usuarioNorm = normalizarTexto(usuarioRaw);
       const partesCorretas = corretaRaw
         .split(/[,/;]| ou /i)
-        .map(s => s.trim())
-        .filter(Boolean)
-        .map(s => normalizarTexto(s));
+        .map(s => normalizarTexto(s))
+        .filter(Boolean);
 
       const vf = { v: "verdadeiro", verdadeiro: "verdadeiro", f: "falso", falso: "falso" };
       let acertou = false;
@@ -191,99 +277,6 @@ app.post("/api/submit-answers", (req, res) => {
   } catch (err) {
     console.error("Erro ao corrigir:", err);
     res.status(500).json({ error: "Erro ao corrigir respostas" });
-  }
-});
-
-// rota para listar todas as perguntas
-app.get("/admin/perguntas", async (req, res) => {
-  try {
-    const result = await pool.query("SELECT * FROM perguntas ORDER BY id ASC");
-    let html = `
-      <h1>Perguntas no Banco de Dados</h1>
-      <table border="1" cellpadding="5" cellspacing="0">
-        <tr>
-          <th>ID</th>
-          <th>Pergunta</th>
-          <th>Resposta</th>
-          <th>Tipo</th>
-        </tr>
-    `;
-    result.rows.forEach(row => {
-      html += `
-        <tr>
-          <td>${row.id}</td>
-          <td>${row.pergunta}</td>
-          <td>${row.resposta}</td>
-          <td>${row.tipo}</td>
-        </tr>
-      `;
-    });
-    html += "</table>";
-    res.send(html);
-  } catch (err) {
-    console.error("Erro ao buscar perguntas:", err);
-    res.status(500).send("Erro ao acessar o banco de dados");
-  }
-});
-
-// rota para listar todos os usuários
-app.get("/admin/usuarios", async (req, res) => {
-  try {
-    const result = await pool.query("SELECT id, nome, email, criado_em FROM usuarios ORDER BY id ASC");
-    let html = `
-      <h1>Usuários Cadastrados</h1>
-      <table border="1" cellpadding="5" cellspacing="0">
-        <tr>
-          <th>ID</th>
-          <th>Nome</th>
-          <th>Email</th>
-          <th>Criado em</th>
-        </tr>
-    `;
-    result.rows.forEach(u => {
-      html += `
-        <tr>
-          <td>${u.id}</td>
-          <td>${u.nome}</td>
-          <td>${u.email}</td>
-          <td>${u.criado_em}</td>
-        </tr>
-      `;
-    });
-    html += "</table>";
-    res.send(html);
-  } catch (err) {
-    console.error("Erro ao buscar usuários:", err);
-    res.status(500).send("Erro ao acessar o banco de dados");
-  }
-});
-
-app.post("/api/signup", async (req, res) => {
-  try {
-    const { nome, email, senha } = req.body;
-
-    // Validação básica
-    if (!nome || !email || !senha) {
-      return res.status(400).json({ error: "Todos os campos são obrigatórios" });
-    }
-
-    // Verifica se já existe usuário com esse email
-    const existing = await pool.query("SELECT id FROM usuarios WHERE email = $1", [email]);
-    if (existing.rows.length > 0) {
-      return res.status(400).json({ error: "Email já cadastrado" });
-    }
-
-    // Insere novo usuário
-    const result = await pool.query(
-      "INSERT INTO usuarios (nome, email, senha) VALUES ($1, $2, $3) RETURNING id, nome, email, criado_em",
-      [nome, email, senha]
-    );
-
-    const novoUsuario = result.rows[0];
-    res.status(201).json({ message: "Usuário criado com sucesso!", usuario: novoUsuario });
-  } catch (err) {
-    console.error("Erro ao criar usuário:", err);
-    res.status(500).json({ error: "Erro ao criar usuário" });
   }
 });
 

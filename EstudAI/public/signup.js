@@ -1,29 +1,58 @@
-const form = document.getElementById('signupForm');
+// sign-up.js
+document.addEventListener("DOMContentLoaded", () => {
+  const form = document.getElementById("loginForm");
+  const usernameInput = document.getElementById("username");
+  const emailInput = document.querySelector("input[type='email']");
+  const passwordInput = document.querySelector("input[type='password']");
 
-form.addEventListener('submit', async (e) => {
+  // div para exibir mensagens de erro ou sucesso
+  let msgDiv = document.createElement("div");
+  msgDiv.id = "signupMessage";
+  msgDiv.style.marginTop = "10px";
+  form.appendChild(msgDiv);
+
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const nome = document.getElementById('username').value;
-    const email = document.getElementById('email').value;
-    const senha = document.getElementById('password').value;
+    msgDiv.textContent = ""; // limpa mensagens antigas
+    msgDiv.style.color = "red";
+
+    const username = usernameInput.value.trim();
+    const email = emailInput.value.trim();
+    const password = passwordInput.value.trim();
+
+    if (!username || !email || !password) {
+      msgDiv.textContent = "Preencha todos os campos!";
+      return;
+    }
 
     try {
-        const response = await fetch('/api/signup', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nome, email, senha })
-        });
+      const response = await fetch("/api/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nome: username, email, senha: password }),
+      });
 
-        const data = await response.json();
+      const data = await response.json();
 
-        if (response.ok) {
-            alert('Conta criada com sucesso!');
-            window.location.href = 'index.html'; // redireciona após criar conta
-        } else {
-            alert('Erro: ' + (data.error || 'Não foi possível criar a conta'));
-        }
+      if (!response.ok) {
+        // mostra a mensagem de erro retornada pelo backend
+        msgDiv.textContent = data.error || "Erro ao criar conta.";
+        return;
+      }
+
+      // sucesso
+      msgDiv.style.color = "green";
+      msgDiv.textContent = "Conta criada com sucesso! Você pode fazer login.";
+
+      // limpa campos
+      usernameInput.value = "";
+      emailInput.value = "";
+      passwordInput.value = "";
+
     } catch (err) {
-        console.error(err);
-        alert('Erro ao criar conta');
+      msgDiv.textContent = "Erro de conexão com o servidor.";
+      console.error(err);
     }
+  });
 });
