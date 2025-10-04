@@ -6,7 +6,6 @@ import cors from "cors";
 import nodeFetch from "node-fetch"; // fallback para Node <18
 import pool from "./db.js"; // importa a conexão
 
-
 dotenv.config();
 
 const app = express();
@@ -43,54 +42,35 @@ function similaridade(a, b) {
   return inter.length / union.size;
 }
 
-/** Extrai texto da resposta do Gemini (tenta vários formatos) */
-function extractTextFromGeminiResponse(apiResponse) {
+/** Rota temporária para criar tabelas */
+app.get("/admin/criar-tabelas", async (req, res) => {
   try {
-    if (!apiResponse) return "";
-    if (typeof apiResponse === "string") return apiResponse.trim();
-    if (apiResponse.candidates && apiResponse.candidates.length > 0) {
-      const parts = apiResponse.candidates[0].content?.parts;
-      if (parts && parts.length > 0 && parts[0].text) return parts[0].text.trim();
-    }
-    // fallback para procurar string em object
-    if (apiResponse.output && typeof apiResponse.output === "string") return apiResponse.output.trim();
-    return "";
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS usuarios (
+        id SERIAL PRIMARY KEY,
+        nome VARCHAR(255) NOT NULL,
+        email VARCHAR(255) NOT NULL UNIQUE,
+        senha VARCHAR(255) NOT NULL,
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE IF NOT EXISTS perguntas (
+        id SERIAL PRIMARY KEY,
+        pergunta TEXT NOT NULL,
+        resposta TEXT NOT NULL,
+        tipo VARCHAR(50) NOT NULL,
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    res.send("Tabelas criadas com sucesso!");
   } catch (err) {
-    console.error("Erro ao extrair texto do Gemini:", err);
-    return "";
+    console.error("Erro ao criar tabelas:", err);
+    res.status(500).send("Erro ao criar tabelas");
   }
-}
-
-/** Tenta extrair JSON válido do texto (mais robusto que JSON.parse direto) */
-function parseQuestionsFromText(text) {
-  if (!text) return [];
-  // tenta JSON.parse direto
-  try {
-    const maybe = text.replace(/```json/i, "").replace(/```/g, "").trim();
-    const j = JSON.parse(maybe);
-    if (Array.isArray(j.questions)) return j.questions;
-  } catch (e) {
-    // tenta extrair substring que pareça JSON
-    const start = text.indexOf("{");
-    const end = text.lastIndexOf("}");
-    if (start !== -1 && end !== -1 && end > start) {
-      const sub = text.substring(start, end + 1);
-      try {
-        const j2 = JSON.parse(sub);
-        if (Array.isArray(j2.questions)) return j2.questions;
-      } catch (e2) {
-        console.error("parseQuestionsFromText: não conseguiu parsear JSON extraído", e2);
-      }
-    }
-    console.error("parseQuestionsFromText: JSON parse falhou", e);
-  }
-  return [];
-}
+});
 
 /** Rota para gerar perguntas via Gemini */
 app.post("/api/generate-questions", async (req, res) => {
   const { resumo = "", topicos = "", dificuldade = [], tipo = [] } = req.body;
-
   const prompt = `
 Gere 10 perguntas de ${Array.isArray(tipo) ? tipo.join(", ") : tipo} 
 com nível de dificuldade: ${Array.isArray(dificuldade) ? dificuldade.join(", ") : dificuldade}.
@@ -103,13 +83,12 @@ Tópicos: ${topicos}
     {
       "tipo": "multipla" | "vf" | "discursiva",
       "pergunta": "texto da pergunta",
-      "alternativas": ["A", "B", "C", "D"], // apenas se for múltipla
+      "alternativas": ["A", "B", "C", "D"],
       "resposta": "resposta correta ou 'Verdadeiro/Falso'"
     }
   ]
 }
 `;
-
   try {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) throw new Error("GEMINI_API_KEY não configurada em .env");
@@ -131,9 +110,7 @@ Tópicos: ${topicos}
     }
 
     const data = await response.json();
-    console.log("Resposta completa Gemini:", JSON.stringify(data, null, 2));
-
-    const rawText = extractTextFromGeminiResponse(data) || JSON.stringify(data);
+    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || JSON.stringify(data);
     const questions = parseQuestionsFromText(rawText);
 
     res.json({ questions, rawText });
@@ -164,14 +141,7 @@ app.post("/api/submit-answers", (req, res) => {
         .filter(Boolean)
         .map(s => normalizarTexto(s));
 
-      // VF mapping
-      const vf = {
-        v: "verdadeiro",
-        verdadeiro: "verdadeiro",
-        f: "falso",
-        falso: "falso"
-      };
-
+      const vf = { v: "verdadeiro", verdadeiro: "verdadeiro", f: "falso", falso: "falso" };
       let acertou = false;
       let bestSimilarity = 0;
       let matchedCorreta = partesCorretas.length ? partesCorretas[0] : "";
@@ -180,7 +150,6 @@ app.post("/api/submit-answers", (req, res) => {
         const corretaFinal = vf[c] || c;
         const usuarioFinal = vf[usuarioNorm] || usuarioNorm;
 
-        // igualdade exata
         if (usuarioFinal === corretaFinal) {
           acertou = true;
           bestSimilarity = 1;
@@ -188,13 +157,12 @@ app.post("/api/submit-answers", (req, res) => {
           break;
         }
 
-        // similaridade (útil para discursivas)
         const sim = similaridade(usuarioFinal, corretaFinal);
         if (sim > bestSimilarity) {
           bestSimilarity = sim;
           matchedCorreta = corretaFinal;
         }
-        // threshold (ajustável)
+
         if (sim >= 0.45) {
           acertou = true;
           break;
@@ -202,7 +170,6 @@ app.post("/api/submit-answers", (req, res) => {
       }
 
       if (acertou) acertos++;
-
       details.push({
         index: idx,
         pergunta: r.pergunta,
@@ -227,13 +194,10 @@ app.post("/api/submit-answers", (req, res) => {
   }
 });
 
-// rota para listar todas as perguntas do banco
+// rota para listar todas as perguntas
 app.get("/admin/perguntas", async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM perguntas ORDER BY id ASC");
-    const rows = result.rows;
-
-    // cria um HTML simples para visualizar
     let html = `
       <h1>Perguntas no Banco de Dados</h1>
       <table border="1" cellpadding="5" cellspacing="0">
@@ -244,8 +208,7 @@ app.get("/admin/perguntas", async (req, res) => {
           <th>Tipo</th>
         </tr>
     `;
-
-    rows.forEach(row => {
+    result.rows.forEach(row => {
       html += `
         <tr>
           <td>${row.id}</td>
@@ -255,7 +218,6 @@ app.get("/admin/perguntas", async (req, res) => {
         </tr>
       `;
     });
-
     html += "</table>";
     res.send(html);
   } catch (err) {
@@ -264,12 +226,10 @@ app.get("/admin/perguntas", async (req, res) => {
   }
 });
 
+// rota para listar todos os usuários
 app.get("/admin/usuarios", async (req, res) => {
   try {
     const result = await pool.query("SELECT id, nome, email, criado_em FROM usuarios ORDER BY id ASC");
-    const usuarios = result.rows;
-
-    // cria um HTML simples
     let html = `
       <h1>Usuários Cadastrados</h1>
       <table border="1" cellpadding="5" cellspacing="0">
@@ -280,8 +240,7 @@ app.get("/admin/usuarios", async (req, res) => {
           <th>Criado em</th>
         </tr>
     `;
-
-    usuarios.forEach(u => {
+    result.rows.forEach(u => {
       html += `
         <tr>
           <td>${u.id}</td>
@@ -291,38 +250,11 @@ app.get("/admin/usuarios", async (req, res) => {
         </tr>
       `;
     });
-
     html += "</table>";
     res.send(html);
   } catch (err) {
     console.error("Erro ao buscar usuários:", err);
     res.status(500).send("Erro ao acessar o banco de dados");
-  }
-});
-
-// rota temporária para criar tabelas
-app.get("/admin/criar-tabelas", async (req, res) => {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS usuarios (
-        id SERIAL PRIMARY KEY,
-        nome VARCHAR(255) NOT NULL,
-        email VARCHAR(255) NOT NULL UNIQUE,
-        senha VARCHAR(255) NOT NULL,
-        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-      CREATE TABLE IF NOT EXISTS perguntas (
-        id SERIAL PRIMARY KEY,
-        pergunta TEXT NOT NULL,
-        resposta TEXT NOT NULL,
-        tipo VARCHAR(50) NOT NULL,
-        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-    res.send("Tabelas criadas com sucesso!");
-  } catch (err) {
-    console.error("Erro ao criar tabelas:", err);
-    res.status(500).send("Erro ao criar tabelas");
   }
 });
 
