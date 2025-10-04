@@ -4,6 +4,8 @@ import bodyParser from "body-parser";
 import dotenv from "dotenv";
 import cors from "cors";
 import nodeFetch from "node-fetch"; // fallback para Node <18
+import pool from "./db.js"; // importa a conexão
+
 
 dotenv.config();
 
@@ -222,6 +224,43 @@ app.post("/api/submit-answers", (req, res) => {
   } catch (err) {
     console.error("Erro ao corrigir:", err);
     res.status(500).json({ error: "Erro ao corrigir respostas" });
+  }
+});
+
+// rota para listar todas as perguntas do banco
+app.get("/admin/perguntas", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM perguntas ORDER BY id ASC");
+    const rows = result.rows;
+
+    // cria um HTML simples para visualizar
+    let html = `
+      <h1>Perguntas no Banco de Dados</h1>
+      <table border="1" cellpadding="5" cellspacing="0">
+        <tr>
+          <th>ID</th>
+          <th>Pergunta</th>
+          <th>Resposta</th>
+          <th>Tipo</th>
+        </tr>
+    `;
+
+    rows.forEach(row => {
+      html += `
+        <tr>
+          <td>${row.id}</td>
+          <td>${row.pergunta}</td>
+          <td>${row.resposta}</td>
+          <td>${row.tipo}</td>
+        </tr>
+      `;
+    });
+
+    html += "</table>";
+    res.send(html);
+  } catch (err) {
+    console.error("Erro ao buscar perguntas:", err);
+    res.status(500).send("Erro ao acessar o banco de dados");
   }
 });
 

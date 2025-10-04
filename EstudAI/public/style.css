@@ -19,7 +19,7 @@ body {
   color: #fff;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: center;
   position: sticky;
   top: 0;
   gap: 20px;
@@ -40,6 +40,21 @@ body {
 
 .home-bar a:hover {
   text-decoration: underline;
+}
+
+.login {
+  display: inline-block;
+  padding: 8px 16px;
+  font-family: "SUSE Mono";
+  font-size: 16px;
+  position: absolute;
+  top: 10px;
+  right: 30px;
+}
+
+.login-link{
+  text-decoration: none;
+  color: #fff;
 }
 
 .btn-logo{

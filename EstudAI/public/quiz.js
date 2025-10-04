@@ -1,4 +1,3 @@
-// public/quiz.js
 document.getElementById("quizForm").addEventListener("submit", async function (e) {
   e.preventDefault();
 
