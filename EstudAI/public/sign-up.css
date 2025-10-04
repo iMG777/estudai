@@ -114,6 +114,8 @@ input[type="password"]::-ms-reveal {
   margin-top: 60px;
   font-size: 20px;
   transition: all 0.3s ease;
+  background-color: transparent;
+  border: transparent;
 }
 
 .criar:hover {

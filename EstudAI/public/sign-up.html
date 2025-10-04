@@ -5,12 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="shortcut icon" href="assets/logokbeca.ico" type="image/x-icon">
     <link rel="stylesheet" href="sign-up.css">
-    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <title>Login</title>
+    <title>Sign Up</title>
 </head>
 <body>
-    <form id="loginForm">
+    <form id="signupForm">
         <div id="login">
             <h1 class="sign-in">Sign Up</h1>
 
@@ -20,13 +19,15 @@
             </div>
 
             <div id="sign-in">
-                <input type="text" id="username" placeholder="Nome de Usuário">
-                <input class="input" type="email" placeholder="Email" required>
-                <input class="input" type="password" placeholder="Senha" required>
+                <input type="text" id="username" name="username" placeholder="Nome de Usuário" required>
+                <input type="email" id="email" name="email" placeholder="Email" required>
+                <input type="password" id="password" name="password" placeholder="Senha" required>
             </div>
 
-            <a href="index.html" class="criar">CRIAR</a>
+            <button type="submit" class="criar">CRIAR</button>
         </div>
     </form>
+
+    <script src="signup.js"></script>
 </body>
 </html>

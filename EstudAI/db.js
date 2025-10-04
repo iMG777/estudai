@@ -1,15 +1,14 @@
-// db.js
 import pkg from "pg";
 const { Pool } = pkg;
 
 const pool = new Pool({
   user: process.env.DB_USER,
-  host: process.env.DB_HOST,
+  host: process.env.DB_HOST,       // ⚠️ External DB URL para localhost
   database: process.env.DB_NAME,
   password: process.env.DB_PASS,
   port: process.env.DB_PORT || 5432,
   ssl: {
-    rejectUnauthorized: false, // obrigatório para Render
+    rejectUnauthorized: false,     // obrigatório para Render
   },
 });
 
