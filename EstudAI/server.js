@@ -280,6 +280,29 @@ app.post("/api/submit-answers", (req, res) => {
   }
 });
 
+app.post("/api/login", async (req, res) => {
+    const { email, senha } = req.body;
+
+    if (!email || !senha) return res.status(400).json({ error: "Email e senha obrigatórios" });
+
+    try {
+        const result = await pool.query(
+            "SELECT id, nome, email FROM usuarios WHERE email = $1 AND senha = $2",
+            [email, senha]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(401).json({ error: "Email ou senha incorretos" });
+        }
+
+        res.json({ message: "Login realizado!", usuario: result.rows[0] });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Erro no login" });
+    }
+});
+
+
 app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
 });

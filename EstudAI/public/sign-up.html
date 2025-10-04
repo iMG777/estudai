@@ -10,15 +10,20 @@
 </head>
 <body>
     <form id="signupForm">
-        <div id="sign-in">
-            <input type="text" id="username" name="username" placeholder="Nome de Usuário" required>
-            <span class="error-message" id="error-username"></span>
+        <div id="login">
+            <h1 class="sign-in">Sign Up</h1>
 
-            <input type="email" id="email" name="email" placeholder="Email" required>
-            <span class="error-message" id="error-email"></span>
+            <div class="social-login">
+                <a href="#" class="icon-social"><i class="fab fa-google"></i></a>
+                <a href="#" class="icon-social"><i class="fab fa-facebook-f"></i></a>
+            </div>
 
-            <input type="password" id="password" name="password" placeholder="Senha" required>
-            <span class="error-message" id="error-password"></span>
+            <div id="sign-in">
+                <input type="text" id="username" name="username" placeholder="Nome de Usuário" required>
+                <input type="email" id="email" name="email" placeholder="Email" required>
+                <input type="password" id="password" name="password" placeholder="Senha" required>
+            </div>
+
             <button type="submit" class="criar">CRIAR</button>
         </div>
     </form>
