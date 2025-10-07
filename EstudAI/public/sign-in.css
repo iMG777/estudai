@@ -112,6 +112,8 @@ input[type="password"]::-ms-reveal {
 /* ===== Botão Entrar ===== */
 .entrar {
   color: #fff;
+  background-color: transparent;
+  border: transparent;
   text-align: center;
   text-decoration: none;
   font-family: "SUSE Mono";

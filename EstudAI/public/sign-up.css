@@ -124,9 +124,32 @@ input[type="password"]::-ms-reveal {
 }
 
 .error-msg {
-  color: #ff4d4d;
-  font-size: 12px;
+  color: #ff5b5b;
+  font-size: 0.85rem;
   margin-top: 5px;
   display: block;
   text-align: left;
+  font-family: 'Inter', sans-serif;
 }
+
+
+.user-profile {
+  display: none;
+  position: fixed;
+  top: 20px;
+  right: 20px;
+}
+
+.profile-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #9f6bff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #fff;
+  font-family: 'SUSE Mono', monospace;
+  cursor: pointer;
+}
+

@@ -208,20 +208,33 @@ app.post("/api/submit-answers", (req, res) => {
 app.post("/api/signup", async (req, res) => {
   try {
     const { nome, email, senha } = req.body;
-    if (!nome || !email || !senha) return res.status(400).json({ error: "Preencha todos os campos." });
 
-    const hashed = await bcrypt.hash(senha, 10);
     const result = await pool.query(
-      "INSERT INTO usuarios (nome, email, senha) VALUES ($1, $2, $3) RETURNING id, nome, email",
-      [nome, email, hashed]
+      "INSERT INTO usuarios (nome, email, senha) VALUES ($1, $2, $3) RETURNING *",
+      [nome, email, senha]
     );
 
     res.json({ usuario: result.rows[0] });
   } catch (err) {
     console.error("Erro no /api/signup:", err);
-    res.status(500).json({ error: "Erro ao criar conta" });
+
+    // Tratamento para duplicatas
+    if (err.code === "23505") {
+      // verifica qual campo violou a constraint
+      if (err.constraint === "usuarios_email_key") {
+        res.status(400).json({ error: "Este e-mail já está cadastrado." });
+      } else if (err.constraint === "usuarios_nome_key") {
+        res.status(400).json({ error: "Este nome de usuário já está em uso." });
+      } else {
+        res.status(400).json({ error: "Usuário já existente." });
+      }
+    } else {
+      res.status(500).json({ error: "Erro ao criar conta." });
+    }
   }
 });
+
+
 
 /* ======== ROTA: LOGIN ======== */
 app.post("/api/login", async (req, res) => {

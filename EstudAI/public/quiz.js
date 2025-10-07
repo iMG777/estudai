@@ -4,7 +4,6 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
   const resumo = document.getElementById("resumo")?.value.trim() || "";
   const topicos = document.getElementById("topicos")?.value.trim() || "";
 
-  // --- CORREÇÃO AQUI: aspas e parênteses corretos ---
   const dificuldade = Array.from(document.querySelectorAll("input[name='dificuldade']:checked")).map(el => el.value);
   const tipoPergunta = Array.from(document.querySelectorAll("input[name='tipo']:checked")).map(el => el.value);
 
@@ -26,7 +25,6 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
     }
 
     const data = await response.json();
-    console.log("Resposta da API:", data);
 
     if (!data.questions || data.questions.length === 0) {
       perguntasDiv.innerHTML = `<p>Nenhuma pergunta foi gerada.</p>
@@ -39,26 +37,14 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
 
     const criarRadio = (nome, valor) => {
       const li = document.createElement("li");
-
       const label = document.createElement("label");
-      label.style.cursor = "pointer";
-      label.style.display = "block";
-      label.style.padding = "8px 12px";
-      label.style.border = "1px solid transparent";
-      label.style.borderRadius = "6px";
-      label.style.marginBottom = "4px";
-      label.style.userSelect = "none";
-
       const input = document.createElement("input");
       input.type = "radio";
       input.name = nome;
       input.value = valor;
-      input.style.marginRight = "8px";
-
       label.appendChild(input);
       label.appendChild(document.createTextNode(valor));
       li.appendChild(label);
-
       return li;
     };
 
@@ -71,39 +57,29 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
         item.textContent = q;
       } else if (q && typeof q === "object" && q.pergunta) {
         let perguntaText = q.pergunta.trim();
-        if (q.tipo === "vf" && !perguntaText.endsWith("?")) {
-          perguntaText += "?";
-        }
+        if (q.tipo === "vf" && !perguntaText.endsWith("?")) perguntaText += "?";
         const p = document.createElement("div");
         p.textContent = perguntaText;
         item.appendChild(p);
 
-        if (q.tipo === "multipla" && q.alternativas && Array.isArray(q.alternativas)) {
+        if (q.tipo === "multipla" && Array.isArray(q.alternativas)) {
           const ul = document.createElement("ul");
-          q.alternativas.forEach((alt) => {
-            ul.appendChild(criarRadio(`pergunta_${idx}`, alt));
-          });
+          q.alternativas.forEach((alt) => ul.appendChild(criarRadio(`pergunta_${idx}`, alt)));
           item.appendChild(ul);
         } else if (q.tipo === "vf") {
           const ul = document.createElement("ul");
-          ["Verdadeiro", "Falso"].forEach((alt) => {
-            ul.appendChild(criarRadio(`pergunta_${idx}`, alt));
-          });
+          ["Verdadeiro", "Falso"].forEach((alt) => ul.appendChild(criarRadio(`pergunta_${idx}`, alt)));
           item.appendChild(ul);
         } else if (q.tipo === "discursiva") {
           const textarea = document.createElement("textarea");
           textarea.placeholder = "Digite sua resposta...";
-          textarea.name = `resposta_${idx}`; // <--- nome único para recuperar depois
-          textarea.style.width = "100%";
-          textarea.style.padding = "6px";
-          textarea.style.marginTop = "4px";
+          textarea.name = `resposta_${idx}`;
           item.appendChild(textarea);
         }
 
         if (q.resposta) {
           const ans = document.createElement("div");
           ans.classList.add("resposta");
-          ans.style.fontStyle = "italic";
           ans.style.display = "none";
           ans.textContent = `Resposta: ${q.resposta}`;
           item.appendChild(ans);
@@ -115,23 +91,10 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
 
     perguntasDiv.appendChild(lista);
 
-    // Botão mostrar respostas
-    const showBtn = document.createElement("button");
-    showBtn.type = "button";
-    showBtn.textContent = "Mostrar Respostas";
-    showBtn.style.marginTop = "12px";
-    showBtn.addEventListener("click", () => {
-      const respostas = perguntasDiv.querySelectorAll(".resposta");
-      respostas.forEach(r => r.style.display = "block");
-      showBtn.remove();
-    });
-    perguntasDiv.appendChild(showBtn);
-
     // Botão enviar respostas
     const submitBtn = document.createElement("button");
     submitBtn.type = "button";
     submitBtn.textContent = "Enviar Respostas";
-    submitBtn.style.marginTop = "12px";
     submitBtn.addEventListener("click", async () => {
       const respostas = [];
 
@@ -169,31 +132,35 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
         }
 
         const result = await response.json();
-        // Mostra resultado resumido + lista com questões erradas/certas
+
+        // Calcula moedas
+        let moedasGanhas = result.acertos;
+        let moedasTotais = parseInt(localStorage.getItem("moedas")) || 0;
+        moedasTotais += moedasGanhas;
+        localStorage.setItem("moedas", moedasTotais);
+
+        // Mostra resultado
         const resultadoDiv = document.createElement("div");
         resultadoDiv.style.marginTop = "12px";
-        resultadoDiv.innerHTML = `<strong>Resultado:</strong> ✅ Acertos: ${result.acertos} / ${result.total} — ❌ Erros: ${result.erros}`;
+        resultadoDiv.innerHTML = `<strong>Resultado:</strong> ✅ Acertos: ${result.acertos} / ${result.total} — ❌ Erros: ${result.erros} <br>
+        💰 Moedas ganhas: ${moedasGanhas} — Total de moedas: ${moedasTotais}`;
 
-        // Detalhes por questão (opcional, útil para debug)
+        // Mostra respostas corretas somente após envio
+        const respostasDiv = perguntasDiv.querySelectorAll(".resposta");
+        respostasDiv.forEach(r => r.style.display = "block");
+
+        // Detalhes por questão
         const detalhesUL = document.createElement("ul");
-        if (result.details && Array.isArray(result.details)) {
+        if (Array.isArray(result.details)) {
           result.details.forEach(d => {
             const li = document.createElement("li");
-            const sim = (typeof d.similarity === "number") ? d.similarity : (d.similarity ?? 0);
-            li.innerHTML = `Q${(typeof d.index === "number" ? d.index : 0) + 1}: <strong>${d.acertou ? "Correta" : "Incorreta"}</strong> — Sua resposta: "${d.usuario}"`;
-
+            li.innerHTML = `Q${(d.index ?? 0) + 1}: <strong>${d.acertou ? "Correta" : "Incorreta"}</strong> — Sua resposta: "${d.usuario}"`;
             if (!d.acertou) li.style.color = "crimson";
             detalhesUL.appendChild(li);
           });
-        } else {
-          const li = document.createElement("li");
-          li.textContent = "Detalhes não disponíveis.";
-          detalhesUL.appendChild(li);
         }
-
         resultadoDiv.appendChild(detalhesUL);
 
-        // remove antigo resultado, se houver
         const existing = document.getElementById("resultado-geral");
         if (existing) existing.remove();
         resultadoDiv.id = "resultado-geral";

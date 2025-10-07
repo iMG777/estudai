@@ -1,52 +1,35 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="shortcut icon" href="assets/logokbeca.ico" type="image/x-icon">
-    <link rel="stylesheet" href="sign-in.css">
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <title>Login</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="shortcut icon" href="assets/logokbeca.ico" type="image/x-icon">
+  <link rel="stylesheet" href="sign-in.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <title>Login</title>
 </head>
 <body>
-    <form id="loginForm">
-        <div id="login">
-            <h1 class="sign-in">Sign In</h1>
+  <form id="loginForm">
+    <div id="login">
+      <h1 class="sign-in">Sign In</h1>
 
-            <div class="social-login">
-                <a href="#" class="icon-social"><i class="fab fa-google"></i></a>
-                <a href="#" class="icon-social"><i class="fab fa-facebook-f"></i></a>
-            </div>
+      <div class="social-login">
+        <a href="#" class="icon-social"><i class="fab fa-google"></i></a>
+        <a href="#" class="icon-social"><i class="fab fa-facebook-f"></i></a>
+      </div>
 
-            <div id="sign-in">
-                <input class="input" type="email" placeholder="Email" required>
-                <input class="input" type="password" placeholder="Senha" required>
-            </div>
+      <div id="sign-in">
+        <input id="email" class="input" type="email" placeholder="Email" required>
+        <input id="senha" class="input" type="password" placeholder="Senha" required>
+      </div>
 
-            <a href="index.html" class="alt-senha"> Esqueceu a sua senha?</a>
-            <a href="sign-up.html" class="criar-conta"> Não tem uma conta? Criar Agora</a>
-            <a href="index.html" class="entrar">ENTRAR</a>
-        </div>
-    </form>
+      <a href="index.html" class="alt-senha">Esqueceu a sua senha?</a>
+      <a href="sign-up.html" class="criar-conta">Não tem uma conta? Criar Agora</a>
 
-    <!-- logo após o formulário -->
-    <div id="userProfile" style="display:none; position: fixed; top: 20px; right: 20px;">
-        <div id="profileCircle" style="
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background-color: #9f6bff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: #fff;
-            font-family: 'SUSE Mono';
-            cursor: pointer;
-        ">
-            <i class="fas fa-user"></i>
-        </div>
+      <button type="submit" class="entrar">ENTRAR</button>
     </div>
+  </form>
 
+  <script src="signin.js"></script>
 </body>
 </html>

@@ -1,0 +1,26 @@
+#userProfile {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  background-color: #9f6bff;
+  cursor: pointer;
+
+  display: inline-block;
+  position: fixed;
+  top: 10px;
+  right: 30px;
+}
+
+.profile-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #9f6bff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #fff;
+  font-family: 'SUSE Mono', monospace;
+  cursor: pointer;
+}
+
