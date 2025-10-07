@@ -40,7 +40,7 @@ textarea, select {
   border: none;
   outline: none;
   font-size: 1rem;
-  resize: none;
+  resize: none
 }
 
 .checkbox-group {
@@ -125,6 +125,7 @@ textarea, select {
   background: rgba(0,0,0,0.4);
   border-radius: 12px;
   border: 1px solid #ddd;
+  accent-color: #7a2fe0;
 }
 
 #perguntas li > div:first-child {
