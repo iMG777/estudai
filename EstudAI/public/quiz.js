@@ -53,9 +53,7 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
       const item = document.createElement("li");
       item.dataset.index = idx;
 
-      if (typeof q === "string") {
-        item.textContent = q;
-      } else if (q && typeof q === "object" && q.pergunta) {
+      if (q && typeof q === "object" && q.pergunta) {
         let perguntaText = q.pergunta.trim();
         if (q.tipo === "vf" && !perguntaText.endsWith("?")) perguntaText += "?";
         const p = document.createElement("div");
@@ -77,11 +75,12 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
           item.appendChild(textarea);
         }
 
+        // Resposta correta escondida inicialmente
         if (q.resposta) {
           const ans = document.createElement("div");
           ans.classList.add("resposta");
           ans.style.display = "none";
-          ans.textContent = `Resposta: ${q.resposta}`;
+          ans.textContent = `Resposta correta: ${q.resposta}`;
           item.appendChild(ans);
         }
       }
@@ -95,7 +94,11 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
     const submitBtn = document.createElement("button");
     submitBtn.type = "button";
     submitBtn.textContent = "Enviar Respostas";
+
     submitBtn.addEventListener("click", async () => {
+      // Esconde o botão ao clicar
+      submitBtn.style.display = "none";
+
       const respostas = [];
 
       data.questions.forEach((q, idx) => {
@@ -145,7 +148,7 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
         resultadoDiv.innerHTML = `<strong>Resultado:</strong> ✅ Acertos: ${result.acertos} / ${result.total} — ❌ Erros: ${result.erros} <br>
         💰 Moedas ganhas: ${moedasGanhas} — Total de moedas: ${moedasTotais}`;
 
-        // Mostra respostas corretas somente após envio
+        // Mostra respostas corretas
         const respostasDiv = perguntasDiv.querySelectorAll(".resposta");
         respostasDiv.forEach(r => r.style.display = "block");
 
@@ -171,6 +174,7 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
         alert("Erro ao enviar respostas. Veja console (F12).");
       }
     });
+
     perguntasDiv.appendChild(submitBtn);
 
   } catch (err) {
