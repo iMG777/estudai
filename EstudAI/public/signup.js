@@ -1,43 +1,29 @@
-const form = document.getElementById("signupForm");
-const usernameInput = document.getElementById("username");
-const emailInput = document.getElementById("email");
-const passwordInput = document.getElementById("password");
-
-const errorUsername = document.getElementById("error-username");
-const errorEmail = document.getElementById("error-email");
-const errorPassword = document.getElementById("error-password");
+const form = document.getElementById("signup-form");
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  // Limpa mensagens antigas
-  errorUsername.textContent = "";
-  errorEmail.textContent = "";
-  errorPassword.textContent = "";
-
-  const nome = usernameInput.value.trim();
-  const email = emailInput.value.trim();
-  const senha = passwordInput.value.trim();
+  const nome = document.getElementById("nome").value;
+  const email = document.getElementById("email").value;
+  const senha = document.getElementById("senha").value;
 
   try {
-    const res = await fetch("/api/signup", {
+    const response = await fetch("/api/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ nome, email, senha }),
     });
 
-    const data = await res.json();
+    const data = await response.json();
 
-    if (!res.ok) {
-      if (data.error.includes("Email")) errorEmail.textContent = data.error;
-      else if (data.error.includes("nome")) errorUsername.textContent = data.error;
-      else alert(data.error);
-      return;
+    if (response.ok) {
+      localStorage.setItem("usuario", JSON.stringify(data.usuario));
+      alert("Conta criada com sucesso!");
+      window.location.href = "index.html";
+    } else {
+      alert(data.error || "Erro ao criar conta");
     }
-
-    alert(data.message);
-    form.reset();
   } catch (err) {
-    console.error("Erro no signup:", err);
+    alert("Erro de rede: " + err.message);
   }
 });

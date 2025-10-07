@@ -3,8 +3,9 @@ import express from "express";
 import bodyParser from "body-parser";
 import dotenv from "dotenv";
 import cors from "cors";
-import nodeFetch from "node-fetch"; // fallback para Node <18
-import pool from "./db.js"; // importa a conexão
+import nodeFetch from "node-fetch";
+import bcrypt from "bcrypt";
+import pool from "./db.js"; // <- conexão com PostgreSQL
 
 dotenv.config();
 
@@ -15,10 +16,9 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static("public"));
 
-// usa global fetch se existir (Node 18+), senão usa node-fetch
 const safeFetch = globalThis.fetch ?? nodeFetch;
 
-/** Normaliza texto (remove acentos, pontuação, trim, lower) */
+/* ======== FUNÇÕES AUXILIARES ======== */
 function normalizarTexto(txt) {
   return (txt || "")
     .toString()
@@ -30,7 +30,6 @@ function normalizarTexto(txt) {
     .replace(/\s+/g, " ");
 }
 
-/** Similaridade simples (Jaccard sobre palavras) */
 function similaridade(a, b) {
   const strA = normalizarTexto(a);
   const strB = normalizarTexto(b);
@@ -42,7 +41,22 @@ function similaridade(a, b) {
   return inter.length / union.size;
 }
 
-/** Helper para extrair JSON de texto bruto */
+function extractTextFromGeminiResponse(apiResponse) {
+  try {
+    if (!apiResponse) return "";
+    if (typeof apiResponse === "string") return apiResponse.trim();
+    if (apiResponse.candidates && apiResponse.candidates.length > 0) {
+      const parts = apiResponse.candidates[0].content?.parts;
+      if (parts && parts.length > 0 && parts[0].text) return parts[0].text.trim();
+    }
+    if (apiResponse.output && typeof apiResponse.output === "string") return apiResponse.output.trim();
+    return "";
+  } catch (err) {
+    console.error("Erro ao extrair texto do Gemini:", err);
+    return "";
+  }
+}
+
 function parseQuestionsFromText(text) {
   if (!text) return [];
   try {
@@ -57,111 +71,19 @@ function parseQuestionsFromText(text) {
       try {
         const j2 = JSON.parse(sub);
         if (Array.isArray(j2.questions)) return j2.questions;
-      } catch {}
+      } catch (e2) {
+        console.error("parseQuestionsFromText: não conseguiu parsear JSON extraído", e2);
+      }
     }
+    console.error("parseQuestionsFromText: JSON parse falhou", e);
   }
   return [];
 }
 
-/** Rotas do backend */
-
-/** Signup - cria usuário */
-app.post("/api/signup", async (req, res) => {
-  try {
-    const { nome, email, senha } = req.body;
-
-    if (!nome || !email || !senha) {
-      return res.status(400).json({ error: "Todos os campos são obrigatórios" });
-    }
-
-    // Verifica se email ou nome já existem
-    const exists = await pool.query(
-      "SELECT id FROM usuarios WHERE email = $1 OR nome = $2",
-      [email, nome]
-    );
-    if (exists.rows.length > 0) {
-      return res.status(400).json({ error: "Email ou nome de usuário já cadastrado" });
-    }
-
-    const result = await pool.query(
-      "INSERT INTO usuarios (nome, email, senha) VALUES ($1, $2, $3) RETURNING id, nome, email, criado_em",
-      [nome, email, senha]
-    );
-
-    res.status(201).json({ message: "Usuário criado com sucesso!", usuario: result.rows[0] });
-  } catch (err) {
-    console.error("Erro ao criar usuário:", err);
-    res.status(500).json({ error: "Erro ao criar usuário" });
-  }
-});
-
-/** Lista todos os usuários */
-app.get("/admin/usuarios", async (req, res) => {
-  try {
-    const result = await pool.query("SELECT id, nome, email, criado_em FROM usuarios ORDER BY id ASC");
-    let html = `
-      <h1>Usuários Cadastrados</h1>
-      <table border="1" cellpadding="5" cellspacing="0">
-        <tr>
-          <th>ID</th>
-          <th>Nome</th>
-          <th>Email</th>
-          <th>Criado em</th>
-        </tr>
-    `;
-    result.rows.forEach(u => {
-      html += `
-        <tr>
-          <td>${u.id}</td>
-          <td>${u.nome}</td>
-          <td>${u.email}</td>
-          <td>${u.criado_em}</td>
-        </tr>
-      `;
-    });
-    html += "</table>";
-    res.send(html);
-  } catch (err) {
-    console.error("Erro ao buscar usuários:", err);
-    res.status(500).send("Erro ao acessar o banco de dados");
-  }
-});
-
-/** Lista todas as perguntas */
-app.get("/admin/perguntas", async (req, res) => {
-  try {
-    const result = await pool.query("SELECT * FROM perguntas ORDER BY id ASC");
-    let html = `
-      <h1>Perguntas no Banco de Dados</h1>
-      <table border="1" cellpadding="5" cellspacing="0">
-        <tr>
-          <th>ID</th>
-          <th>Pergunta</th>
-          <th>Resposta</th>
-          <th>Tipo</th>
-        </tr>
-    `;
-    result.rows.forEach(row => {
-      html += `
-        <tr>
-          <td>${row.id}</td>
-          <td>${row.pergunta}</td>
-          <td>${row.resposta}</td>
-          <td>${row.tipo}</td>
-        </tr>
-      `;
-    });
-    html += "</table>";
-    res.send(html);
-  } catch (err) {
-    console.error("Erro ao buscar perguntas:", err);
-    res.status(500).send("Erro ao acessar o banco de dados");
-  }
-});
-
-/** Rota para gerar perguntas via Gemini */
+/* ======== ROTA: GERAR PERGUNTAS (Gemini) ======== */
 app.post("/api/generate-questions", async (req, res) => {
   const { resumo = "", topicos = "", dificuldade = [], tipo = [] } = req.body;
+
   const prompt = `
 Gere 10 perguntas de ${Array.isArray(tipo) ? tipo.join(", ") : tipo} 
 com nível de dificuldade: ${Array.isArray(dificuldade) ? dificuldade.join(", ") : dificuldade}.
@@ -180,6 +102,7 @@ Tópicos: ${topicos}
   ]
 }
 `;
+
   try {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) throw new Error("GEMINI_API_KEY não configurada em .env");
@@ -189,7 +112,9 @@ Tópicos: ${topicos}
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+        }),
       }
     );
 
@@ -199,8 +124,11 @@ Tópicos: ${topicos}
     }
 
     const data = await response.json();
-    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || JSON.stringify(data);
+    console.log("Resposta completa Gemini:", JSON.stringify(data, null, 2));
+
+    const rawText = extractTextFromGeminiResponse(data) || JSON.stringify(data);
     const questions = parseQuestionsFromText(rawText);
+
     res.json({ questions, rawText });
   } catch (err) {
     console.error("Erro em /api/generate-questions:", err);
@@ -208,7 +136,7 @@ Tópicos: ${topicos}
   }
 });
 
-/** Rota para corrigir respostas */
+/* ======== ROTA: CORRIGIR RESPOSTAS ======== */
 app.post("/api/submit-answers", (req, res) => {
   try {
     const { respostas } = req.body;
@@ -221,13 +149,16 @@ app.post("/api/submit-answers", (req, res) => {
       const idx = r.index ?? null;
       const corretaRaw = (r.respostaCorreta ?? "").toString();
       const usuarioRaw = (r.respostaUsuario ?? "").toString();
+
       const usuarioNorm = normalizarTexto(usuarioRaw);
       const partesCorretas = corretaRaw
         .split(/[,/;]| ou /i)
-        .map(s => normalizarTexto(s))
-        .filter(Boolean);
+        .map(s => s.trim())
+        .filter(Boolean)
+        .map(s => normalizarTexto(s));
 
       const vf = { v: "verdadeiro", verdadeiro: "verdadeiro", f: "falso", falso: "falso" };
+
       let acertou = false;
       let bestSimilarity = 0;
       let matchedCorreta = partesCorretas.length ? partesCorretas[0] : "";
@@ -248,7 +179,6 @@ app.post("/api/submit-answers", (req, res) => {
           bestSimilarity = sim;
           matchedCorreta = corretaFinal;
         }
-
         if (sim >= 0.45) {
           acertou = true;
           break;
@@ -256,53 +186,65 @@ app.post("/api/submit-answers", (req, res) => {
       }
 
       if (acertou) acertos++;
+
       details.push({
         index: idx,
         pergunta: r.pergunta,
-        corretas: partesCorretas,
         correta: matchedCorreta,
         usuario: usuarioRaw,
-        usuarioNorm,
         similarity: bestSimilarity,
         acertou
       });
     });
 
-    res.json({
-      total: respostas.length,
-      acertos,
-      erros: respostas.length - acertos,
-      details
-    });
+    res.json({ total: respostas.length, acertos, erros: respostas.length - acertos, details });
   } catch (err) {
     console.error("Erro ao corrigir:", err);
     res.status(500).json({ error: "Erro ao corrigir respostas" });
   }
 });
 
-app.post("/api/login", async (req, res) => {
-    const { email, senha } = req.body;
+/* ======== ROTA: CADASTRAR USUÁRIO ======== */
+app.post("/api/signup", async (req, res) => {
+  try {
+    const { nome, email, senha } = req.body;
+    if (!nome || !email || !senha) return res.status(400).json({ error: "Preencha todos os campos." });
 
-    if (!email || !senha) return res.status(400).json({ error: "Email e senha obrigatórios" });
+    const hashed = await bcrypt.hash(senha, 10);
+    const result = await pool.query(
+      "INSERT INTO usuarios (nome, email, senha) VALUES ($1, $2, $3) RETURNING id, nome, email",
+      [nome, email, hashed]
+    );
 
-    try {
-        const result = await pool.query(
-            "SELECT id, nome, email FROM usuarios WHERE email = $1 AND senha = $2",
-            [email, senha]
-        );
-
-        if (result.rows.length === 0) {
-            return res.status(401).json({ error: "Email ou senha incorretos" });
-        }
-
-        res.json({ message: "Login realizado!", usuario: result.rows[0] });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: "Erro no login" });
-    }
+    res.json({ usuario: result.rows[0] });
+  } catch (err) {
+    console.error("Erro no /api/signup:", err);
+    res.status(500).json({ error: "Erro ao criar conta" });
+  }
 });
 
+/* ======== ROTA: LOGIN ======== */
+app.post("/api/login", async (req, res) => {
+  try {
+    const { email, senha } = req.body;
+    if (!email || !senha) return res.status(400).json({ error: "Preencha todos os campos." });
 
+    const result = await pool.query("SELECT * FROM usuarios WHERE email = $1", [email]);
+    const user = result.rows[0];
+    if (!user) return res.status(404).json({ error: "Usuário não encontrado." });
+
+    const valid = await bcrypt.compare(senha, user.senha);
+    if (!valid) return res.status(401).json({ error: "Senha incorreta." });
+
+    delete user.senha;
+    res.json({ usuario: user });
+  } catch (err) {
+    console.error("Erro no /api/login:", err);
+    res.status(500).json({ error: "Erro ao fazer login" });
+  }
+});
+
+/* ======== INICIAR SERVIDOR ======== */
 app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
 });

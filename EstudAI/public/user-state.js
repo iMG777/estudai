@@ -1,19 +1,17 @@
 document.addEventListener("DOMContentLoaded", () => {
-    const loginLink = document.querySelector(".login-link");
-    const userProfile = document.getElementById("userProfile");
+  const loginLink = document.querySelector(".login");
+  const userProfile = document.getElementById("userProfile");
 
-    const loggedUser = JSON.parse(localStorage.getItem("user"));
-    if (loggedUser) {
-        // esconde botão login
-        if (loginLink) loginLink.style.display = "none";
+  // Verifica se o usuário está salvo no localStorage
+  const usuario = JSON.parse(localStorage.getItem("usuario"));
 
-        // mostra bolinha
-        if (userProfile) userProfile.style.display = "block";
-
-        // clique na bolinha
-        userProfile.addEventListener("click", () => {
-            alert(`Bem-vindo, ${loggedUser.nome}!`);
-            // aqui você pode abrir o perfil ou menu
-        });
-    }
+  if (usuario && usuario.email) {
+    // Usuário logado → mostra o círculo do perfil
+    loginLink.style.display = "none";
+    userProfile.style.display = "block";
+  } else {
+    // Usuário não logado → mostra o botão de login
+    loginLink.style.display = "block";
+    userProfile.style.display = "none";
+  }
 });
