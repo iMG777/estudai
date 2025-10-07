@@ -209,18 +209,28 @@ app.post("/api/signup", async (req, res) => {
   try {
     const { nome, email, senha } = req.body;
 
+    if (!nome || !email || !senha) {
+      return res.status(400).json({ error: "Preencha todos os campos." });
+    }
+
+    // Faz o hash da senha
+    const hashedPassword = await bcrypt.hash(senha, 10);
+
     const result = await pool.query(
       "INSERT INTO usuarios (nome, email, senha) VALUES ($1, $2, $3) RETURNING *",
-      [nome, email, senha]
+      [nome, email, hashedPassword]
     );
 
-    res.json({ usuario: result.rows[0] });
+    // Remove senha do objeto antes de enviar
+    const usuario = result.rows[0];
+    delete usuario.senha;
+
+    res.json({ usuario });
   } catch (err) {
     console.error("Erro no /api/signup:", err);
 
     // Tratamento para duplicatas
     if (err.code === "23505") {
-      // verifica qual campo violou a constraint
       if (err.constraint === "usuarios_email_key") {
         res.status(400).json({ error: "Este e-mail já está cadastrado." });
       } else if (err.constraint === "usuarios_nome_key") {
