@@ -38,6 +38,13 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
     const criarRadio = (nome, valor) => {
       const li = document.createElement("li");
       const label = document.createElement("label");
+      label.style.cursor = "pointer";
+      label.style.display = "block";
+      label.style.padding = "8px 12px";
+      label.style.border = "1px solid transparent";
+      label.style.borderRadius = "6px";
+      label.style.marginBottom = "4px";
+      label.style.userSelect = "none";
       const input = document.createElement("input");
       input.type = "radio";
       input.name = nome;
@@ -72,6 +79,9 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
           const textarea = document.createElement("textarea");
           textarea.placeholder = "Digite sua resposta...";
           textarea.name = `resposta_${idx}`;
+          textarea.style.width = "100%";
+          textarea.style.padding = "6px";
+          textarea.style.marginTop = "4px";
           item.appendChild(textarea);
         }
 

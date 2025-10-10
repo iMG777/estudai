@@ -12,26 +12,72 @@
   <div class="home-bar">
     <nav>
       <a href="index.html" class="home">INICIO</a>
-      <a href="dashboard.html">DASHBOARD</a>
+      <a href="dashboard.html">QUIZ</a>
       <a href="#">SOBRE</a>
       <h1 class="logo">EstudAI</h1>
       <a href="index.html" class="btn-logo"></a>
     </nav>
-  </div>
 
-  <div class="login">
-    <a href="sign-in.html" class="login-link">LOGIN</a>
-  </div>
+    <div class="login">
+      <a href="sign-in.html" class="login-link">LOGIN</a>
+    </div>
 
-  <div id="userProfile" style="display:none;">
-    <a href="perfil.html" class="profile-circle"></a>
+    <img src="assets/user.png" id="userProfile" onclick="toggleMenu()">
+
+    <div id="subMenu" class="sub-menu-wrap">
+      <div class="sub-menu">
+        <div class="user-info">
+          <img src="assets/user.png">
+          <h3>Kbeça D Pik</h3>
+        </div>
+        <hr>
+
+        <a href="perfil.html" class="sub-menu-link">
+          <img src="assets/profile.png">
+          <p>Editar Perfil</p>
+          <span>></span>
+        </a>
+
+        <a href="dashboard.html" class="sub-menu-link">
+          <img src="assets/profile.png">
+          <p>Dashboard</p>
+          <span>></span>
+        </a>
+
+        <a href="#" class="sub-menu-link">
+          <img src="assets/setting.png">
+          <p>Opções e Segurança</p>
+          <span>></span>
+        </a>
+
+        <a href="#" class="sub-menu-link">
+          <img src="assets/help.png">
+          <p>Ajuda</p>
+          <span>></span>
+        </a>
+
+        <a href="#" id="logoutButton" class="sub-menu-link">
+          <img src="assets/logout.png">
+          <p>Sair</p>
+          <span>></span>
+        </a>
+      </div>
+    </div>
   </div>
 
   <h1 class="hero-title">Pronto para estudar?</h1>
 
   <a href="novoestudo.html" class="estudar"> Começar a estudar</a>
+
+  <script src="user-state.js"></script>
+
+  <script>
+    let subMenu = document.getElementById("subMenu");
+
+    function toggleMenu(){
+      subMenu.classList.toggle("open-menu");
+    }
+  </script>
   
 </body>
-
-<script src="user-state.js"></script>
 </html>

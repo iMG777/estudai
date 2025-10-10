@@ -1,3 +1,80 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=SUSE+Mono:ital,wght@0,100..800;1,100..800&display=swap');
+
+body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  background: linear-gradient(180deg, #9f6bff, #6119cc);
+
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.home-bar {
+  width: 100%;
+  height: 60px;
+  background-color: #000;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: sticky;
+  top: 0;
+  gap: 20px;
+}
+
+.home-bar nav {
+  display: flex;
+  gap: 25px;
+  padding-right: 30px;
+}
+
+.home-bar a {
+  color: #fff;
+  text-decoration: none;
+  font-family: "SUSE Mono";
+  font-size: 16px;
+}
+
+.home-bar a:hover {
+  text-decoration: underline;
+}
+
+.login {
+  display: inline-block;
+  padding: 8px 16px;
+  font-family: "SUSE Mono";
+  font-size: 16px;
+  position: fixed;
+  top: 10px;
+  right: 30px;
+}
+
+.login-link{
+  text-decoration: none;
+  color: #fff;
+}
+
+.btn-logo{
+  position: fixed;
+  top: 8px;
+  left: 37px;
+  width: 155px;
+  height: 40px;
+  z-index: 9999;
+}
+
+.logo {
+  position: fixed;
+  top: 5px;
+  left: 35px;
+  height: auto;
+  z-index: 9999;
+  font-family: "Libertinus Keyboard", system-ui;
+  font-size: 20px;
+}
+
 #userProfile {
   width: 35px;
   height: 35px;
@@ -11,16 +88,83 @@
   right: 30px;
 }
 
-.profile-circle {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background-color: #9f6bff;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  color: #fff;
-  font-family: 'SUSE Mono', monospace;
-  cursor: pointer;
+.sub-menu-wrap{
+  position: fixed;
+  top: 60px;
+  right: 1px;
+  width: 250px;
+  border-radius: 5px;
+  max-height: 0px;
+  overflow: hidden;
+  transition: max-height 0.5s;
+}
+.sub-menu-wrap.open-menu{
+  max-height: 400px;
 }
 
+.sub-menu{
+  background: #fff;
+  padding: 5px;
+}
+
+.user-info{
+  display: flex;
+  align-items: center;
+}
+
+.user-info h3{
+  font-weight: 800;
+  color: #000;
+  font-family: 'SUSE Mono', monospace;
+}
+
+.user-info img{
+  width: 50px;
+  border-radius: 50%;
+  margin-right: 15px;
+}
+
+.user-info hr{
+  border: 0;
+  height: 1px;
+  width: 100%;
+  background: #ccc;
+  margin: 15px 0 10px;
+}
+
+.sub-menu-link{
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: #525252;
+  margin: 12px 0;
+}
+
+.sub-menu-link p{
+  color: #000;
+  width: 100%;
+  font-size: 15px;
+}
+
+.sub-menu-link:hover p{
+  font-weight: 600;
+}
+
+.sub-menu-link img{
+  width: 20px;
+  background: #e5e5e5;
+  border-radius: 50%;
+  padding: 16px;
+  margin-right: 15px;
+}
+
+.sub-menu-link span{
+  color: #000;
+  font-size: 20px;
+  transition: transform 0.5s;
+  margin-right: 10px;
+}
+
+.sub-menu-link:hover span{
+  transform: translateX(5px);
+}
