@@ -204,46 +204,59 @@ app.post("/api/submit-answers", (req, res) => {
   }
 });
 
+// Função para validar o formato do email
+function validarEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 /* ======== ROTA: CADASTRAR USUÁRIO ======== */
 app.post("/api/signup", async (req, res) => {
   try {
     const { nome, email, senha } = req.body;
+    const erros = [];
 
-    if (!nome || !email || !senha) {
-      return res.status(400).json({ error: "Preencha todos os campos." });
+    if (!nome) erros.push("Nome é obrigatório.");
+    if (!email) erros.push("Email é obrigatório.");
+    else if (!validarEmail(email)) erros.push("Email inválido.");
+
+    if (!senha) erros.push("Senha é obrigatória.");
+    else if (senha.length < 6) erros.push("Senha muito curta. Use pelo menos 6 caracteres.");
+
+    // Checa se já existe nome ou email (apenas se os campos foram preenchidos)
+    if (nome && email) {
+      const existingUser = await pool.query(
+        "SELECT * FROM usuarios WHERE email = $1 OR nome = $2",
+        [email, nome]
+      );
+
+      if (existingUser.rows.length > 0) {
+        const user = existingUser.rows[0];
+        if (user.email === email) erros.push("Este e-mail já está cadastrado.");
+        if (user.nome === nome) erros.push("Este nome de usuário já está em uso.");
+      }
     }
 
-    // Faz o hash da senha
-    const hashedPassword = await bcrypt.hash(senha, 10);
+    if (erros.length > 0) {
+      return res.status(400).json({ erros }); // Retorna todos os erros juntos
+    }
 
+    // Tudo certo: criar usuário
+    const hashedPassword = await bcrypt.hash(senha, 10);
     const result = await pool.query(
       "INSERT INTO usuarios (nome, email, senha) VALUES ($1, $2, $3) RETURNING *",
       [nome, email, hashedPassword]
     );
 
-    // Remove senha do objeto antes de enviar
     const usuario = result.rows[0];
     delete usuario.senha;
 
     res.json({ usuario });
+
   } catch (err) {
     console.error("Erro no /api/signup:", err);
-
-    // Tratamento para duplicatas
-    if (err.code === "23505") {
-      if (err.constraint === "usuarios_email_key") {
-        res.status(400).json({ error: "Este e-mail já está cadastrado." });
-      } else if (err.constraint === "usuarios_nome_key") {
-        res.status(400).json({ error: "Este nome de usuário já está em uso." });
-      } else {
-        res.status(400).json({ error: "Usuário já existente." });
-      }
-    } else {
-      res.status(500).json({ error: "Erro ao criar conta." });
-    }
+    res.status(500).json({ error: "Erro ao criar conta." });
   }
 });
-
 
 
 /* ======== ROTA: LOGIN ======== */

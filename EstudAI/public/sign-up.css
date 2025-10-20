@@ -123,14 +123,13 @@ input[type="password"]::-ms-reveal {
   color: #9f6bff;
 }
 
-.error-msg {
-  color: #ff5b5b;
-  font-size: 0.85rem;
-  margin-top: 5px;
-  display: block;
-  text-align: left;
-  font-family: 'Inter', sans-serif;
+#error-username,
+#error-email,
+#error-password {
+  color: red;
+  white-space: pre-line; /* respeita as quebras de linha do innerHTML */
 }
+
 
 
 .user-profile {

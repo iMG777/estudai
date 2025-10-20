@@ -168,3 +168,151 @@ body {
 .sub-menu-link:hover span{
   transform: translateX(5px);
 }
+
+.missions .container {
+  display: none;
+  transition: all 0.3s ease;
+}
+
+.missions.open-missions .container {
+  display: block;
+}
+
+.btnMissions{
+  display: flex;
+  position: fixed;
+  bottom: 20px;
+  cursor: pointer;
+
+  right: 20px;
+  border: 2px solid white;
+  background-color: transparent;
+  border-radius: 50%;
+  width: 70px;
+  height: 70px;
+  padding: 10px;
+}
+
+.btnMissions img{
+  width: 50px;
+  height: 50px;
+  margin-left: 3px;
+}
+
+.container{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  
+  width: 250px;
+  height: 300px;
+  border-radius: 5px;
+  background: #222222;
+  z-index: 9999;
+}
+
+.container h3{
+  display: flex;
+  position: fixed;
+  color: #fff;
+  font-size: 20px;
+  font-family: 'SUSE Mono', monospace;
+  margin-left: 31px;
+  padding: 5px;
+}
+
+.missions {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  z-index: 10;
+}
+
+.btnMissions {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.btnMissions:hover {
+  transform: scale(1.1);
+}
+
+.missions-container {
+  position: absolute;
+  bottom: 70px;
+  right: 0;
+  background: #0c0c0c;
+  border-radius: 15px;
+  box-shadow: 0 4px 25px rgba(0, 0, 0, 0.4);
+  padding: 20px 25px;
+  width: 230px;
+  text-align: center;
+  opacity: 0;
+  transform: translateY(20px);
+  pointer-events: none;
+  transition: all 0.3s ease;
+}
+
+.missions.open-missions .missions-container {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: all;
+}
+
+.missions-container h3 {
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 15px;
+  font-family: 'SUSE Mono', monospace;
+}
+
+.mission-item {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 10px;
+  margin: 10px 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  transition: background 0.3s;
+}
+
+.mission-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.mission-item label {
+  color: #fff;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  font-family: 'SUSE Mono', monospace;
+}
+
+.mission-item input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #6c63ff; /* cor roxa */
+  cursor: pointer;
+}
+
+.mission-item input:checked + span {
+  text-decoration: line-through;
+  color: #8a8a8a;
+  transition: color 0.3s, text-decoration 0.3s;
+}
+
+

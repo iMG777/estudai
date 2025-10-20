@@ -178,7 +178,6 @@ textarea, select {
   background: #2563eb;
 }
 
-/* Moedas ganhas */
 #resultado-geral .moedas {
   margin-top: 12px;
   padding: 10px 15px;
@@ -192,7 +191,6 @@ textarea, select {
   transition: transform 0.3s;
 }
 
-/* Animação leve ao passar o mouse sobre as moedas */
 #resultado-geral .moedas:hover {
   transform: scale(1.05);
 }

@@ -1,21 +1,80 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Perfil</title>
-    <link rel="shortcut icon" href="assets/logokbeca.ico" type="image/x-icon">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EstudAI</title>
+  <link rel="shortcut icon" href="assets/logokbeca.ico" type="image/x-icon">
   <link rel="stylesheet" href="perfil.css">
+  <link rel="stylesheet" href="global.css">
 </head>
 <body>
+  <div class="home-bar">
+    <nav>
+      <a href="index.html" class="home">INICIO</a>
+      <a href="dashboard.html">QUIZ</a>
+      <a href="#">SOBRE</a>
+      <h1 class="logo">EstudAI</h1>
+      <a href="index.html" class="btn-logo"></a>
+    </nav>
+  </div>
 
-    <div id="userProfile" class="user-profile">
-        <div id="profileCircle" class="profile-circle">
-            <i class="fas fa-user"></i>
-        </div>
-        <button id="logoutButton" class="logout-btn">Sair</button>
+  <div class="containerProfile">
+    <div class="user-info">
+      <img src="assets/user.png">
+      <h3 class="username" id="username">Usuário</h3>
     </div>
-    
-    <script src="user-state.js"></script>
+  </div>
+
+  <div class="moedas">
+    <h2>💰 <span id="moedas"></span></h2>
+  </div>
+
+  <div id="openMissions" class="missions">
+    <button id="btnMissions" class="btnMissions" onclick="toggleMissions()">
+      <img src="assets/missions.png" alt="Missões">
+    </button>
+
+    <div class="missions-container">
+      <h3>🎯 MISSÕES DIÁRIAS</h3>
+
+      <div class="mission-item">
+        <label>
+          <input type="checkbox" id="studyMission" disabled>
+          <span>Estude por 1 hora</span>
+        </label>
+      </div>
+
+      <div class="mission-item">
+        <label>
+          <input type="checkbox" id="quizMission" disabled>
+          <span>Responda 1 quiz</span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <script src="missions.js"></script>
+
+  <script>
+    // Pega as moedas do localStorage
+    const moedas = localStorage.getItem("moedas") || 0;
+
+    // Mostra na tela
+    document.getElementById("moedas").textContent = moedas;
+
+    // Pega o usuário do localStorage
+    const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
+
+    // Pega o nome, ou "Usuário" como fallback
+    const nomeUsuario = usuario.nome || "Usuário";
+
+    // Atualiza o H3
+    document.getElementById("username").textContent = nomeUsuario;
+
+  </script>
+
+  <script src="user-state.js"></script>
+  
 </body>
 </html>

@@ -17,55 +17,89 @@
       <h1 class="logo">EstudAI</h1>
       <a href="index.html" class="btn-logo"></a>
     </nav>
+  </div>
+  
+  <div class="login">
+    <a href="sign-in.html" class="login-link">LOGIN</a>
+  </div>
 
-    <div class="login">
-      <a href="sign-in.html" class="login-link">LOGIN</a>
+  <img src="assets/user.png" id="userProfile" onclick="toggleMenu()">
+
+  <div id="subMenu" class="sub-menu-wrap">
+    <div class="sub-menu">
+      <div class="user-info">
+        <img src="assets/user.png">
+        <h3>Kbeça D Pik</h3>
+      </div>
+      <hr>
+
+      <a href="perfil.html" class="sub-menu-link">
+        <img src="assets/profile.png">
+        <p>Perfil</p>
+        <span>></span>
+      </a>
+
+      <a href="#" class="sub-menu-link">
+        <img src="assets/setting.png">
+        <p>Missões Diárias</p>
+        <span>></span>
+      </a>
+
+      <a href="#" class="sub-menu-link">
+        <img src="assets/help.png">
+        <p>Ajuda</p>
+        <span>></span>
+      </a>
+
+      <a href="#" class="sub-menu-link">
+        <img src="assets/logout.png">
+        <p>Sair</p>
+        <span>></span>
+      </a>
     </div>
+  </div>
 
-    <img src="assets/user.png" id="userProfile" onclick="toggleMenu()">
+  <div class="login">
+    <a href="sign-in.html" class="login-link">LOGIN</a>
+  </div>
 
-    <div id="subMenu" class="sub-menu-wrap">
-      <div class="sub-menu">
-        <div class="user-info">
-          <img src="assets/user.png">
-          <h3>Kbeça D Pik</h3>
+  <div id="openMissions" class="missions">
+    <button id="btnMissions" class="btnMissions">
+      <img src="assets/missions.png" alt="missions" onclick="toggleMissions()">
+    </button>
+
+    <div class="container">
+      <h3>MISSÕES DIÁRIAS:</h3>
+
+      <div class="mission1">
+        <p>Estude por 1 hora</p>
+        <div class="checkbox">
+          <i class="fa-solid fa-square"></i>
         </div>
-        <hr>
+      </div>
 
-        <a href="perfil.html" class="sub-menu-link">
-          <img src="assets/profile.png">
-          <p>Editar Perfil</p>
-          <span>></span>
-        </a>
-
-        <a href="#" class="sub-menu-link">
-          <img src="assets/setting.png">
-          <p>Opções e Segurança</p>
-          <span>></span>
-        </a>
-
-        <a href="#" class="sub-menu-link">
-          <img src="assets/help.png">
-          <p>Ajuda</p>
-          <span>></span>
-        </a>
-
-        <a href="#" class="sub-menu-link">
-          <img src="assets/logout.png">
-          <p>Sair</p>
-          <span>></span>
-        </a>
+      <div class="mission2">
+        <p>Responda 1 quiz</p>
+        <div class="checkbox">
+          <i class="fa-solid fa-square"></i>
+        </div>
       </div>
     </div>
   </div>
 
-    <script src="user-state.js"></script>
-
-    <script>
+  <script src="user-state.js"></script>
+  
+  <script>
     let subMenu = document.getElementById("subMenu");
 
     function toggleMenu(){
         subMenu.classList.toggle("open-menu");
+    }
+
+    let openMissions = document.getElementById("openMissions");
+    
+    function toggleMissions(){
+      openMissions.classList.toggle("open-missions");
     }
     </script>
 </body>

@@ -106,6 +106,8 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
     submitBtn.textContent = "Enviar Respostas";
 
     submitBtn.addEventListener("click", async () => {
+      localStorage.setItem('studyMissionDone', 'true');
+    alert('🎉 Missão diária concluída! Você ganhou +10 moedas!');
       // Esconde o botão ao clicar
       submitBtn.style.display = "none";
 
@@ -152,11 +154,24 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
         moedasTotais += moedasGanhas;
         localStorage.setItem("moedas", moedasTotais);
 
+        if(result.acertos >= 10){
+          moedasTotais += 10;
+          moedasGanhas += 10;
+        }
+
         // Mostra resultado
         const resultadoDiv = document.createElement("div");
         resultadoDiv.style.marginTop = "12px";
         resultadoDiv.innerHTML = `<strong>Resultado:</strong> ✅ Acertos: ${result.acertos} / ${result.total} — ❌ Erros: ${result.erros} <br>
         💰 Moedas ganhas: ${moedasGanhas} — Total de moedas: ${moedasTotais}`;
+
+        if (result.acertos === result.total) {
+          const bonusMsg = document.createElement("p");
+          bonusMsg.style.color = "green";
+          bonusMsg.style.fontWeight = "bold";
+          bonusMsg.textContent = "🎉 Bônus! Você acertou todas as perguntas e ganhou +10 moedas!";
+          resultadoDiv.appendChild(bonusMsg);
+        }
 
         // Mostra respostas corretas
         const respostasDiv = perguntasDiv.querySelectorAll(".resposta");

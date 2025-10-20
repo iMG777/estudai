@@ -9,103 +9,144 @@
     <link rel="shortcut icon" href="assets/logokbeca.ico" type="image/x-icon">
 </head>
 <body>
-    <div class="home-bar">
-      <nav>
-        <a href="index.html" class="home">INICIO</a>
-        <a href="dashboard.html">QUIZ</a>
-        <a href="#">SOBRE</a>
-        <h1 class="logo">EstudAI</h1>
-        <a href="index.html" class="btn-logo"></a>
-      </nav>
+
+  <div class="home-bar">
+    <nav>
+      <a href="index.html" class="home">INICIO</a>
+      <a href="dashboard.html">QUIZ</a>
+      <a href="#">SOBRE</a>
+      <h1 class="logo">EstudAI</h1>
+      <a href="index.html" class="btn-logo"></a>
+    </nav>
+  </div>
+
+  <div class="login">
+    <a href="sign-in.html" class="login-link">LOGIN</a>
+  </div>
+
+  <img src="assets/user.png" id="userProfile" onclick="toggleMenu()">
+
+  <div id="subMenu" class="sub-menu-wrap">
+    <div class="sub-menu">
+      <div class="user-info">
+        <img src="assets/user.png">
+        <h3 class="username" id="username">Usuário</h3>
+      </div>
+      <hr>
+
+      <a href="perfil.html" class="sub-menu-link">
+        <img src="assets/profile.png">
+        <p>Perfil</p>
+        <span>></span>
+      </a>
+
+      <a href="dashboard.html" class="sub-menu-link">
+        <img src="assets/profile.png">
+        <p>Dashboard</p>
+        <span>></span>
+      </a>
+
+      <a href="#" class="sub-menu-link">
+        <img src="assets/setting.png">
+        <p>Missões Diárias</p>
+        <span>></span>
+      </a>
+
+      <a href="#" class="sub-menu-link">
+        <img src="assets/help.png">
+        <p>Ajuda</p>
+        <span>></span>
+      </a>
+
+      <a href="#" class="sub-menu-link">
+        <img src="assets/logout.png">
+        <p>Sair</p>
+        <span>></span>
+      </a>
     </div>
+  </div>
 
-    <div class="login">
-        <a href="sign-in.html" class="login-link">LOGIN</a>
+  <div id="openMissions" class="missions">
+    <button id="btnMissions" class="btnMissions" onclick="toggleMissions()">
+      <img src="assets/missions.png" alt="Missões">
+    </button>
+
+    <div class="missions-container">
+      <h3>🎯 MISSÕES DIÁRIAS</h3>
+
+      <div class="mission-item">
+        <label>
+          <input type="checkbox" id="studyMission" disabled>
+          <span>Estude por 1 hora</span>
+        </label>
       </div>
 
-      <img src="assets/user.png" id="userProfile" onclick="toggleMenu()">
-
-      <div id="subMenu" class="sub-menu-wrap">
-        <div class="sub-menu">
-          <div class="user-info">
-            <img src="assets/user.png">
-            <h3>Kbeça D Pik</h3>
-          </div>
-          <hr>
-
-          <a href="perfil.html" class="sub-menu-link">
-            <img src="assets/profile.png">
-            <p>Editar Perfil</p>
-            <span>></span>
-          </a>
-
-          <a href="dashboard.html" class="sub-menu-link">
-            <img src="assets/profile.png">
-            <p>Dashboard</p>
-            <span>></span>
-          </a>
-
-          <a href="#" class="sub-menu-link">
-            <img src="assets/setting.png">
-            <p>Opções e Segurança</p>
-            <span>></span>
-          </a>
-
-          <a href="#" class="sub-menu-link">
-            <img src="assets/help.png">
-            <p>Ajuda</p>
-            <span>></span>
-          </a>
-
-          <a href="#" class="sub-menu-link">
-            <img src="assets/logout.png">
-            <p>Sair</p>
-            <span>></span>
-          </a>
-        </div>
+      <div class="mission-item">
+        <label>
+          <input type="checkbox" id="quizMission" disabled>
+          <span>Responda 1 quiz</span>
+        </label>
       </div>
+    </div>
+  </div>
 
 
-    <main>
-      <h1>Conte sobre o que você estudou</h1>
-      <p class="subtitle">Seja específico nas respostas para receber perguntas específicas.</p>
+  <main>
+    <h1>Conte sobre o que você estudou</h1>
+    <p class="subtitle">Seja específico nas respostas para receber perguntas específicas.</p>
 
-      <form id="quizForm">
-        <label for="resumo">Resumo do conteúdo estudado:</label>
-        <textarea id="resumo" placeholder="Exemplo: Estudei o ciclo celular, focando nas fases G1, S, G2 e mitose..."></textarea>
+    <form id="quizForm">
+      <label for="resumo">Resumo do conteúdo estudado:</label>
+      <textarea id="resumo" placeholder="Exemplo: Estudei o ciclo celular, focando nas fases G1, S, G2 e mitose..."></textarea>
 
-        <label for="topicos">Pontos principais:</label>
-        <textarea id="topicos" placeholder="Exemplo: Interfase, replicação do DNA, cromossomos..."></textarea>
+      <label for="topicos">Pontos principais:</label>
+      <textarea id="topicos" placeholder="Exemplo: Interfase, replicação do DNA, cromossomos..."></textarea>
 
-        <fieldset class="checkbox-group">
-          <legend>Nível de dificuldade:</legend>
-          <label><input type="checkbox" name="dificuldade" value="facil"> Fácil</label>
-          <label><input type="checkbox" name="dificuldade" value="medio"> Médio</label>
-          <label><input type="checkbox" name="dificuldade" value="dificil"> Difícil</label>
-        </fieldset>
+      <fieldset class="checkbox-group">
+        <legend>Nível de dificuldade:</legend>
+        <label><input type="checkbox" name="dificuldade" value="facil"> Fácil</label>
+        <label><input type="checkbox" name="dificuldade" value="medio"> Médio</label>
+        <label><input type="checkbox" name="dificuldade" value="dificil"> Difícil</label>
+      </fieldset>
 
-        <fieldset class="checkbox-group">
-          <legend>Tipo de pergunta:</legend>
-          <label><input type="checkbox" name="tipo" value="multipla"> Múltipla escolha</label>
-          <label><input type="checkbox" name="tipo" value="vf"> Verdadeiro ou falso</label>
-          <label><input type="checkbox" name="tipo" value="discursiva"> Discursiva</label>
-        </fieldset>
+      <fieldset class="checkbox-group">
+        <legend>Tipo de pergunta:</legend>
+        <label><input type="checkbox" name="tipo" value="multipla"> Múltipla escolha</label>
+        <label><input type="checkbox" name="tipo" value="vf"> Verdadeiro ou falso</label>
+        <label><input type="checkbox" name="tipo" value="discursiva"> Discursiva</label>
+      </fieldset>
 
-        <button type="submit" class="btn-gerar">Gerar Perguntas</button>
-      </form>
-    </main>
+      <button type="submit" class="btn-gerar">Gerar Perguntas</button>
+    </form>
+  </main>
 
-    <div id="perguntas"></div>
+<div id="perguntas"></div>
 
-  <script src="quiz.js"></script>
-  <script src="user-state.js"></script>
+<script src="quiz.js"></script>
+<script src="user-state.js"></script>
+<script src="missions.js"></script>
 
-  <script>
-    let subMenu = document.getElementById("subMenu");
+<script>
+  let subMenu = document.getElementById("subMenu");
 
-    function toggleMenu(){
-      subMenu.classList.toggle("open-menu");
-    }
-  </script>
+  function toggleMenu(){
+    subMenu.classList.toggle("open-menu");
+  }
+
+  let openMissions = document.getElementById("openMissions");
+    
+  function toggleMissions(){
+    openMissions.classList.toggle("open-missions");
+  }
+
+  // Pega o usuário do localStorage
+  const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
+
+  // Pega o nome, ou "Usuário" como fallback
+  const nomeUsuario = usuario.nome || "Usuário";
+
+  // Atualiza o H3
+  document.getElementById("username").textContent = nomeUsuario;
+</script>
 </body>
 </html>
