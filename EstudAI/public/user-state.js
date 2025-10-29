@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   const loginLink = document.querySelector(".login") ||
                     document.querySelector(".login-link") ||
                     document.getElementById("login-link");
@@ -7,15 +7,19 @@ document.addEventListener("DOMContentLoaded", () => {
   const logoutButton = document.getElementById("logoutButton");
   const coinsDisplay = document.getElementById("coins-display");
 
-  // --- Recupera dados do usuário ---
-  const usuario = (() => {
-    try { return JSON.parse(localStorage.getItem("usuario")); }
-    catch(e){ return null; }
-  })();
+  // --- Recupera usuário logado do localStorage ---
+  let usuario = null;
+  let coins = 0;
 
-  // --- Recupera moedas e progresso ---
-  let coins = parseInt(localStorage.getItem("coins")) || 0;
-  let studiedOneHour = localStorage.getItem("studiedOneHour") === "true";
+  const usuarioStr = localStorage.getItem("usuario");
+  if (usuarioStr) {
+    try {
+      usuario = JSON.parse(usuarioStr);
+      coins = usuario.moedas ?? 0;
+    } catch(e) {
+      console.error("Erro ao parsear usuario do localStorage:", e);
+    }
+  }
 
   // --- Mostra/oculta elementos de login ---
   if (usuario && (usuario.email || usuario.nome || usuario.id)) {
@@ -27,25 +31,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // --- Atualiza exibição de moedas ---
-  function updateCoinsDisplay() {
-    if (coinsDisplay) {
-      coinsDisplay.textContent = `💰 ${coins}`;
-    }
+  if (coinsDisplay) {
+    coinsDisplay.textContent = `💰 ${coins}`;
   }
-  updateCoinsDisplay();
-
-  // --- Atualiza status das missões ---
-  function updateMissionsStatus() {
-    const studyMission = document.getElementById("studyMission");
-    const quizMission = document.getElementById("quizMission");
-
-    if (studyMission) studyMission.checked = studiedOneHour;
-    if (quizMission) {
-      const quizCompleted = localStorage.getItem("quizCompleted") === "true";
-      quizMission.checked = quizCompleted;
-    }
-  }
-  updateMissionsStatus();
 
   // --- Logout ---
   if (logoutButton) {
@@ -56,22 +44,4 @@ document.addEventListener("DOMContentLoaded", () => {
       window.location.href = "index.html";
     });
   }
-
-  // --- Exporta função global para o cronômetro atualizar moedas e missões ---
-  window.addCoinsAndCheckMissions = function(hoursPassed) {
-    // +10 moedas por hora
-    coins += 10;
-    localStorage.setItem("coins", coins);
-    updateCoinsDisplay();
-
-    // Missão “Estude por 1 hora”
-    if (hoursPassed >= 1 && !studiedOneHour) {
-      studiedOneHour = true;
-      localStorage.setItem("studiedOneHour", "true");
-      updateMissionsStatus();
-      alert("🎯 Missão concluída: Estude por 1 hora!");
-    }
-
-    alert(`🎉 Você ganhou +10 moedas! Total: ${coins}`);
-  };
 });
