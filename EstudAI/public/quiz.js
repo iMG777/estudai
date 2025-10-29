@@ -1,3 +1,4 @@
+// quiz.js
 document.getElementById("quizForm").addEventListener("submit", async function (e) {
   e.preventDefault();
 
@@ -55,7 +56,6 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
       return li;
     };
 
-    // Renderiza perguntas
     data.questions.forEach((q, idx) => {
       const item = document.createElement("li");
       item.dataset.index = idx;
@@ -85,7 +85,6 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
           item.appendChild(textarea);
         }
 
-        // Resposta correta escondida inicialmente
         if (q.resposta) {
           const ans = document.createElement("div");
           ans.classList.add("resposta");
@@ -106,10 +105,12 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
     submitBtn.textContent = "Enviar Respostas";
 
     submitBtn.addEventListener("click", async () => {
-      localStorage.setItem('studyMissionDone', 'true');
-    alert('🎉 Missão diária concluída! Você ganhou +10 moedas!');
-      // Esconde o botão ao clicar
-      submitBtn.style.display = "none";
+      const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
+      const usuarioId = usuario.id;
+      if (!usuarioId) {
+        alert("Usuário não encontrado. Faça login novamente.");
+        return;
+      }
 
       const respostas = [];
 
@@ -138,7 +139,7 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
         const response = await fetch("/api/submit-answers", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ respostas })
+          body: JSON.stringify({ respostas, usuarioId })
         });
 
         if (!response.ok) {
@@ -148,36 +149,18 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
 
         const result = await response.json();
 
-        // Calcula moedas
-        let moedasGanhas = result.acertos;
-        let moedasTotais = parseInt(localStorage.getItem("moedas")) || 0;
-        moedasTotais += moedasGanhas;
-        localStorage.setItem("moedas", moedasTotais);
+        // Atualiza moedas no localStorage
+        usuario.moedas = result.moedasTotais;
+        localStorage.setItem("usuario", JSON.stringify(usuario));
 
-        if(result.acertos >= 10){
-          moedasTotais += 10;
-          moedasGanhas += 10;
-        }
-
-        // Mostra resultado
         const resultadoDiv = document.createElement("div");
         resultadoDiv.style.marginTop = "12px";
         resultadoDiv.innerHTML = `<strong>Resultado:</strong> ✅ Acertos: ${result.acertos} / ${result.total} — ❌ Erros: ${result.erros} <br>
-        💰 Moedas ganhas: ${moedasGanhas} — Total de moedas: ${moedasTotais}`;
+        💰 Total de moedas: ${result.moedasTotais}`;
 
-        if (result.acertos === result.total) {
-          const bonusMsg = document.createElement("p");
-          bonusMsg.style.color = "green";
-          bonusMsg.style.fontWeight = "bold";
-          bonusMsg.textContent = "🎉 Bônus! Você acertou todas as perguntas e ganhou +10 moedas!";
-          resultadoDiv.appendChild(bonusMsg);
-        }
-
-        // Mostra respostas corretas
         const respostasDiv = perguntasDiv.querySelectorAll(".resposta");
         respostasDiv.forEach(r => r.style.display = "block");
 
-        // Detalhes por questão
         const detalhesUL = document.createElement("ul");
         if (Array.isArray(result.details)) {
           result.details.forEach(d => {
@@ -193,6 +176,14 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
         if (existing) existing.remove();
         resultadoDiv.id = "resultado-geral";
         perguntasDiv.appendChild(resultadoDiv);
+
+        // Oculta o botão
+        submitBtn.style.display = "none";
+
+        // Adiciona mensagem de bônus se acertou tudo
+        if (result.acertos === result.total) {
+          resultadoDiv.innerHTML += `<br>🎉 Bônus: +10 moedas por acertar tudo!`;
+        }
 
       } catch (err) {
         console.error("Erro ao enviar respostas:", err);
