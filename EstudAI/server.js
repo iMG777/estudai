@@ -5,7 +5,7 @@ import dotenv from "dotenv";
 import cors from "cors";
 import nodeFetch from "node-fetch";
 import bcrypt from "bcrypt";
-import pool from "./db.js"; // <- conexão com PostgreSQL
+import pool from "./db.js"; // conexão PostgreSQL
 
 dotenv.config();
 
@@ -136,11 +136,12 @@ Tópicos: ${topicos}
   }
 });
 
-/* ======== ROTA: CORRIGIR RESPOSTAS ======== */
-app.post("/api/submit-answers", (req, res) => {
+/* ======== ROTA: CORRIGIR RESPOSTAS E ATUALIZAR MOEDAS ======== */
+app.post("/api/submit-answers", async (req, res) => {
   try {
-    const { respostas } = req.body;
+    const { respostas, usuarioId } = req.body;
     if (!Array.isArray(respostas)) return res.status(400).json({ error: "Campo 'respostas' precisa ser um array" });
+    if (!usuarioId) return res.status(400).json({ error: "Campo 'usuarioId' é obrigatório" });
 
     let acertos = 0;
     const details = [];
@@ -197,19 +198,36 @@ app.post("/api/submit-answers", (req, res) => {
       });
     });
 
-    res.json({ total: respostas.length, acertos, erros: respostas.length - acertos, details });
+    // Atualiza moedas no banco
+    const resultUser = await pool.query("SELECT moedas FROM usuarios WHERE id = $1", [usuarioId]);
+    let moedasAtuais = resultUser.rows[0]?.moedas || 0;
+    const moedasGanhas = acertos;
+    let moedasTotais = moedasAtuais + moedasGanhas;
+
+    // 🪙 Bônus de +10 se acertar tudo
+    if (acertos === respostas.length) moedasTotais += 10;
+
+    await pool.query("UPDATE usuarios SET moedas = $1 WHERE id = $2", [moedasTotais, usuarioId]);
+
+    res.json({
+      total: respostas.length,
+      acertos,
+      erros: respostas.length - acertos,
+      details,
+      moedasTotais
+    });
+
   } catch (err) {
     console.error("Erro ao corrigir:", err);
     res.status(500).json({ error: "Erro ao corrigir respostas" });
   }
 });
 
-// Função para validar o formato do email
+/* ======== ROTA: CADASTRAR USUÁRIO ======== */
 function validarEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-/* ======== ROTA: CADASTRAR USUÁRIO ======== */
 app.post("/api/signup", async (req, res) => {
   try {
     const { nome, email, senha } = req.body;
@@ -218,46 +236,32 @@ app.post("/api/signup", async (req, res) => {
     if (!nome) erros.push("Nome é obrigatório.");
     if (!email) erros.push("Email é obrigatório.");
     else if (!validarEmail(email)) erros.push("Email inválido.");
-
     if (!senha) erros.push("Senha é obrigatória.");
     else if (senha.length < 6) erros.push("Senha muito curta. Use pelo menos 6 caracteres.");
 
-    // Checa se já existe nome ou email (apenas se os campos foram preenchidos)
-    if (nome && email) {
-      const existingUser = await pool.query(
-        "SELECT * FROM usuarios WHERE email = $1 OR nome = $2",
-        [email, nome]
-      );
-
-      if (existingUser.rows.length > 0) {
-        const user = existingUser.rows[0];
-        if (user.email === email) erros.push("Este e-mail já está cadastrado.");
-        if (user.nome === nome) erros.push("Este nome de usuário já está em uso.");
-      }
+    const existing = await pool.query("SELECT * FROM usuarios WHERE email = $1 OR nome = $2", [email, nome]);
+    if (existing.rows.length > 0) {
+      const u = existing.rows[0];
+      if (u.email === email) erros.push("Este e-mail já está cadastrado.");
+      if (u.nome === nome) erros.push("Este nome de usuário já está em uso.");
     }
 
-    if (erros.length > 0) {
-      return res.status(400).json({ erros }); // Retorna todos os erros juntos
-    }
+    if (erros.length > 0) return res.status(400).json({ erros });
 
-    // Tudo certo: criar usuário
-    const hashedPassword = await bcrypt.hash(senha, 10);
+    const hash = await bcrypt.hash(senha, 10);
     const result = await pool.query(
       "INSERT INTO usuarios (nome, email, senha) VALUES ($1, $2, $3) RETURNING *",
-      [nome, email, hashedPassword]
+      [nome, email, hash]
     );
 
     const usuario = result.rows[0];
     delete usuario.senha;
-
     res.json({ usuario });
-
   } catch (err) {
-    console.error("Erro no /api/signup:", err);
+    console.error("Erro em /api/signup:", err);
     res.status(500).json({ error: "Erro ao criar conta." });
   }
 });
-
 
 /* ======== ROTA: LOGIN ======== */
 app.post("/api/login", async (req, res) => {
@@ -275,7 +279,7 @@ app.post("/api/login", async (req, res) => {
     delete user.senha;
     res.json({ usuario: user });
   } catch (err) {
-    console.error("Erro no /api/login:", err);
+    console.error("Erro em /api/login:", err);
     res.status(500).json({ error: "Erro ao fazer login" });
   }
 });

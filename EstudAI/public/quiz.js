@@ -1,3 +1,4 @@
+// quiz.js (versão completa e atualizada)
 document.getElementById("quizForm").addEventListener("submit", async function (e) {
   e.preventDefault();
 
@@ -106,10 +107,14 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
     submitBtn.textContent = "Enviar Respostas";
 
     submitBtn.addEventListener("click", async () => {
-      localStorage.setItem('studyMissionDone', 'true');
-    alert('🎉 Missão diária concluída! Você ganhou +10 moedas!');
-      // Esconde o botão ao clicar
-      submitBtn.style.display = "none";
+      submitBtn.style.display = "none"; // Oculta botão após clique
+
+      const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
+      const usuarioId = usuario.id;
+      if (!usuarioId) {
+        alert("Usuário não encontrado. Faça login novamente.");
+        return;
+      }
 
       const respostas = [];
 
@@ -138,7 +143,7 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
         const response = await fetch("/api/submit-answers", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ respostas })
+          body: JSON.stringify({ respostas, usuarioId })
         });
 
         if (!response.ok) {
@@ -148,46 +153,35 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
 
         const result = await response.json();
 
-        // Calcula moedas
-        let moedasGanhas = result.acertos;
-        let moedasTotais = parseInt(localStorage.getItem("moedas")) || 0;
-        moedasTotais += moedasGanhas;
-        localStorage.setItem("moedas", moedasTotais);
+        // Atualiza moedas no localStorage
+        usuario.moedas = result.moedasTotais;
+        localStorage.setItem("usuario", JSON.stringify(usuario));
 
-        if(result.acertos >= 10){
-          moedasTotais += 10;
-          moedasGanhas += 10;
-        }
-
-        // Mostra resultado
+        // Exibe resultado geral
         const resultadoDiv = document.createElement("div");
         resultadoDiv.style.marginTop = "12px";
         resultadoDiv.innerHTML = `<strong>Resultado:</strong> ✅ Acertos: ${result.acertos} / ${result.total} — ❌ Erros: ${result.erros} <br>
-        💰 Moedas ganhas: ${moedasGanhas} — Total de moedas: ${moedasTotais}`;
-
-        if (result.acertos === result.total) {
-          const bonusMsg = document.createElement("p");
-          bonusMsg.style.color = "green";
-          bonusMsg.style.fontWeight = "bold";
-          bonusMsg.textContent = "🎉 Bônus! Você acertou todas as perguntas e ganhou +10 moedas!";
-          resultadoDiv.appendChild(bonusMsg);
-        }
+        💰 Total de moedas: ${result.moedasTotais}`;
 
         // Mostra respostas corretas
-        const respostasDiv = perguntasDiv.querySelectorAll(".resposta");
-        respostasDiv.forEach(r => r.style.display = "block");
+        perguntasDiv.querySelectorAll(".resposta").forEach(r => (r.style.display = "block"));
 
-        // Detalhes por questão
-        const detalhesUL = document.createElement("ul");
+        // Lista de detalhes por questão
         if (Array.isArray(result.details)) {
+          const detalhesUL = document.createElement("ul");
           result.details.forEach(d => {
             const li = document.createElement("li");
             li.innerHTML = `Q${(d.index ?? 0) + 1}: <strong>${d.acertou ? "Correta" : "Incorreta"}</strong> — Sua resposta: "${d.usuario}"`;
             if (!d.acertou) li.style.color = "crimson";
             detalhesUL.appendChild(li);
           });
+          resultadoDiv.appendChild(detalhesUL);
         }
-        resultadoDiv.appendChild(detalhesUL);
+
+        // Bônus se acertar tudo
+        if (result.acertos === result.total) {
+          resultadoDiv.innerHTML += `<br>🎉 Bônus: +10 moedas por acertar tudo!`;
+        }
 
         const existing = document.getElementById("resultado-geral");
         if (existing) existing.remove();
