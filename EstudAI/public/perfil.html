@@ -22,12 +22,12 @@
   <div class="containerProfile">
     <div class="user-info">
       <img src="assets/user.png">
-      <h3 class="perfilNome" id="perfilNome">Usuário</h3>
+      <h3 class="username" id="username">Usuário</h3>
     </div>
   </div>
 
-  <div class="perfilMoedas">
-    <h2>💰 <span id="perfilMoedas"></span></h2>
+  <div class="moedas">
+    <h2>💰 <span id="moedas"></span></h2>
   </div>
 
   <div id="openMissions" class="missions">
@@ -54,25 +54,25 @@
     </div>
   </div>
 
+  <script src="missions.js"></script>
+
   <script>
-    document.addEventListener("DOMContentLoaded", () => {
-  const usuario = JSON.parse(localStorage.getItem("usuario"));
+    // Pega as moedas do localStorage
+    const moedas = localStorage.getItem("moedas") || 0;
 
-  if (!usuario || !usuario.id) {
-    document.getElementById("perfilNome").innerText = "Usuário não logado";
-    document.getElementById("perfilMoedas").innerText = "-";
-    return;
-  }
+    // Mostra na tela
+    document.getElementById("moedas").textContent = moedas;
 
-  // Nome e moedas aparecem instantaneamente
-  document.getElementById("perfilNome").innerText = usuario.nome;
-  document.getElementById("perfilMoedas").innerText = usuario.moedas ?? 0;
-});
+    // Pega o usuário do localStorage
+    const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
+
+    // Pega o nome, ou "Usuário" como fallback
+    const nomeUsuario = usuario.nome || "Usuário";
+
+    // Atualiza o H3
+    document.getElementById("username").textContent = nomeUsuario;
 
   </script>
-
-
-  <script src="missions.js"></script>
 
   <script src="user-state.js"></script>
   
