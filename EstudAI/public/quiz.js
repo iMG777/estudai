@@ -1,12 +1,13 @@
-// quiz.js (versão completa e atualizada)
+// quiz.js — versão atualizada (envia dificuldade, tipo e tema para o backend)
 document.getElementById("quizForm").addEventListener("submit", async function (e) {
   e.preventDefault();
 
   const resumo = document.getElementById("resumo")?.value.trim() || "";
   const topicos = document.getElementById("topicos")?.value.trim() || "";
 
-  const dificuldade = Array.from(document.querySelectorAll("input[name='dificuldade']:checked")).map(el => el.value);
-  const tipoPergunta = Array.from(document.querySelectorAll("input[name='tipo']:checked")).map(el => el.value);
+  // captura dificuldade e tipo
+  const dificuldadeSelecionada = Array.from(document.querySelectorAll("input[name='dificuldade']:checked")).map(el => el.value);
+  const tiposSelecionados = Array.from(document.querySelectorAll("input[name='tipo']:checked")).map(el => el.value);
 
   const perguntasDiv = document.getElementById("perguntas");
   perguntasDiv.innerHTML = "<p>Gerando perguntas...</p>";
@@ -14,10 +15,16 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
   perguntasDiv.style.opacity = "1";
 
   try {
+    // requisita geração das perguntas
     const response = await fetch("/api/generate-questions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ resumo, topicos, dificuldade, tipo: tipoPergunta })
+      body: JSON.stringify({
+        resumo,
+        topicos,
+        dificuldade: dificuldadeSelecionada,
+        tipo: tiposSelecionados
+      })
     });
 
     if (!response.ok) {
@@ -51,12 +58,12 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
       input.name = nome;
       input.value = valor;
       label.appendChild(input);
-      label.appendChild(document.createTextNode(valor));
+      label.appendChild(document.createTextNode(" " + valor));
       li.appendChild(label);
       return li;
     };
 
-    // Renderiza perguntas
+    // renderiza as perguntas
     data.questions.forEach((q, idx) => {
       const item = document.createElement("li");
       item.dataset.index = idx;
@@ -64,6 +71,7 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
       if (q && typeof q === "object" && q.pergunta) {
         let perguntaText = q.pergunta.trim();
         if (q.tipo === "vf" && !perguntaText.endsWith("?")) perguntaText += "?";
+
         const p = document.createElement("div");
         p.textContent = perguntaText;
         item.appendChild(p);
@@ -86,7 +94,6 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
           item.appendChild(textarea);
         }
 
-        // Resposta correta escondida inicialmente
         if (q.resposta) {
           const ans = document.createElement("div");
           ans.classList.add("resposta");
@@ -101,14 +108,12 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
 
     perguntasDiv.appendChild(lista);
 
-    // Botão enviar respostas
+    // botão de envio
     const submitBtn = document.createElement("button");
     submitBtn.type = "button";
     submitBtn.textContent = "Enviar Respostas";
 
     submitBtn.addEventListener("click", async () => {
-      submitBtn.style.display = "none"; // Oculta botão após clique
-
       const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
       const usuarioId = usuario.id;
       if (!usuarioId) {
@@ -116,11 +121,9 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
         return;
       }
 
-      const respostas = [];
-
-      data.questions.forEach((q, idx) => {
+      // coleta respostas do usuário
+      const respostas = data.questions.map((q, idx) => {
         let respostaUsuario = null;
-
         if (q.tipo === "multipla" || q.tipo === "vf") {
           const marcado = document.querySelector(`input[name="pergunta_${idx}"]:checked`);
           if (marcado) respostaUsuario = marcado.value;
@@ -128,22 +131,28 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
           const textarea = document.querySelector(`textarea[name="resposta_${idx}"]`);
           if (textarea) respostaUsuario = textarea.value.trim();
         }
-
-        respostas.push({
+        return {
           index: idx,
           tipo: q.tipo,
           pergunta: q.pergunta,
           alternativas: q.alternativas || null,
           respostaCorreta: q.resposta,
           respostaUsuario
-        });
+        };
       });
 
       try {
+        // envia para o backend (agora incluindo dificuldade, tipo e tema)
         const response = await fetch("/api/submit-answers", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ respostas, usuarioId })
+          body: JSON.stringify({
+            respostas,
+            usuarioId,
+            dificuldade: dificuldadeSelecionada.join(", ") || "Não especificada",
+            tipo: tiposSelecionados.join(", ") || "Não especificado",
+            tema: resumo || topicos || "Geral"
+          })
         });
 
         if (!response.ok) {
@@ -153,40 +162,59 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
 
         const result = await response.json();
 
-        // Atualiza moedas no localStorage
-        usuario.moedas = result.moedasTotais;
+        let totalMoedas = result.moedasTotais;
+        let bonus = 0;
+
+        // bônus se acertou todas
+        if (result.acertos === result.total) {
+          bonus = 0;
+          const bonusRes = await fetch("/api/adicionar-moedas", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ usuarioId, moedas: bonus })
+          });
+          const bonusData = await bonusRes.json();
+          if (bonusData.success) {
+            totalMoedas = bonusData.novasMoedas;
+          }
+        }
+
+        usuario.moedas = totalMoedas;
         localStorage.setItem("usuario", JSON.stringify(usuario));
 
-        // Exibe resultado geral
+        // mostra resultado
         const resultadoDiv = document.createElement("div");
         resultadoDiv.style.marginTop = "12px";
-        resultadoDiv.innerHTML = `<strong>Resultado:</strong> ✅ Acertos: ${result.acertos} / ${result.total} — ❌ Erros: ${result.erros} <br>
-        💰 Total de moedas: ${result.moedasTotais}`;
+        resultadoDiv.innerHTML = `
+          <strong>Resultado:</strong><br>
+          ✅ Acertos: ${result.acertos} / ${result.total}<br>
+          ❌ Erros: ${result.erros}<br>
+          💰 Total de moedas: ${totalMoedas}
+        `;
 
-        // Mostra respostas corretas
-        perguntasDiv.querySelectorAll(".resposta").forEach(r => (r.style.display = "block"));
-
-        // Lista de detalhes por questão
-        if (Array.isArray(result.details)) {
-          const detalhesUL = document.createElement("ul");
-          result.details.forEach(d => {
-            const li = document.createElement("li");
-            li.innerHTML = `Q${(d.index ?? 0) + 1}: <strong>${d.acertou ? "Correta" : "Incorreta"}</strong> — Sua resposta: "${d.usuario}"`;
-            if (!d.acertou) li.style.color = "crimson";
-            detalhesUL.appendChild(li);
-          });
-          resultadoDiv.appendChild(detalhesUL);
+        if (bonus > 0) {
+          resultadoDiv.innerHTML += `<br>🎉 Bônus: +${bonus} moedas por acertar tudo!`;
         }
 
-        // Bônus se acertar tudo
-        if (result.acertos === result.total) {
-          resultadoDiv.innerHTML += `<br>🎉 Bônus: +10 moedas por acertar tudo!`;
-        }
+        // exibe respostas corretas
+        perguntasDiv.querySelectorAll(".resposta").forEach(r => r.style.display = "block");
+
+        // lista de detalhes
+        const detalhesUL = document.createElement("ul");
+        result.details.forEach(d => {
+          const li = document.createElement("li");
+          li.innerHTML = `Q${(d.index ?? 0) + 1}: <strong>${d.acertou ? "Correta" : "Incorreta"}</strong> — Sua resposta: "${d.usuario}"`;
+          if (!d.acertou) li.style.color = "crimson";
+          detalhesUL.appendChild(li);
+        });
+        resultadoDiv.appendChild(detalhesUL);
 
         const existing = document.getElementById("resultado-geral");
         if (existing) existing.remove();
         resultadoDiv.id = "resultado-geral";
         perguntasDiv.appendChild(resultadoDiv);
+
+        submitBtn.style.display = "none";
 
       } catch (err) {
         console.error("Erro ao enviar respostas:", err);

@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", async () => {
+document.addEventListener("DOMContentLoaded", () => {
   const usuario = JSON.parse(localStorage.getItem("usuario"));
 
   if (!usuario || !usuario.id) {
@@ -7,17 +7,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  try {
-    // Faz requisição ao backend para pegar dados atualizados
-    const res = await fetch(`/api/perfil/${usuario.id}`);
-    if (!res.ok) throw new Error("Erro ao buscar perfil");
-    const data = await res.json();
-
-    // Mostra nome e moedas na tela
-    document.getElementById("perfilNome").innerText = data.nome;
-    document.getElementById("perfilMoedas").innerText = data.moedas;
-  } catch (err) {
-    console.error("Erro ao carregar perfil:", err);
-    document.getElementById("perfilMoedas").innerText = "Erro ao carregar";
-  }
-});
+  // Nome e moedas aparecem instantaneamente
+  document.getElementById("perfilNome").innerText = usuario.nome;
+  document.getElementById("perfilMoedas").innerText = usuario.moedas ?? 0;
+  });

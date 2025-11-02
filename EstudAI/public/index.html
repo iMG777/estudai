@@ -13,14 +13,13 @@
   <div class="home-bar">
     <nav>
       <a href="index.html" class="home">INICIO</a>
-      <a href="dashboard.html">QUIZ</a>
+      <a href="dashboard.html">DASHBOARD</a>
       <a href="#">SOBRE</a>
       <h1 class="logo">EstudAI</h1>
       <a href="index.html" class="btn-logo"></a>
     </nav>
   </div>
 
-  
   <div class="login">
     <a href="sign-in.html" class="login-link">LOGIN</a>
   </div>
@@ -90,7 +89,6 @@
       </div>
     </div>
   </div>
-
   
   <main>
     <h1 class="hero-title">Pronto para estudar?</h1>
@@ -100,29 +98,7 @@
   
   <script src="user-state.js"></script>
   <script src="missions.js"></script>
-  
-  <script>
-    let subMenu = document.getElementById("subMenu");
-    
-    function toggleMenu(){
-      subMenu.classList.toggle("open-menu");
-    }
-
-    let openMissions = document.getElementById("openMissions");
-    
-    function toggleMissions(){
-      openMissions.classList.toggle("open-missions");
-    }
-
-    // Pega o usuário do localStorage
-    const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
-
-    // Pega o nome, ou "Usuário" como fallback
-    const nomeUsuario = usuario.nome || "Usuário";
-
-    // Atualiza o H3
-    document.getElementById("username").textContent = nomeUsuario;
-    </script>
+  <script src="global.js"></script>
   
 </body>
 </html>

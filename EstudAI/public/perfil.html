@@ -12,7 +12,7 @@
   <div class="home-bar">
     <nav>
       <a href="index.html" class="home">INICIO</a>
-      <a href="dashboard.html">QUIZ</a>
+      <a href="dashboard.html">DASHBOARD</a>
       <a href="#">SOBRE</a>
       <h1 class="logo">EstudAI</h1>
       <a href="index.html" class="btn-logo"></a>
@@ -26,8 +26,50 @@
     </div>
   </div>
 
-  <div class="perfilMoedas">
-    <h2>💰 <span id="perfilMoedas"></span></h2>
+  <div class="login">
+    <a href="sign-in.html" class="login-link">LOGIN</a>
+  </div>
+  
+  <img src="assets/user.png" id="userProfile" onclick="toggleMenu()">
+  
+  <div id="subMenu" class="sub-menu-wrap">
+    <div class="sub-menu">
+      <div class="user-info">
+        <img src="assets/user.png">
+        <h3 class="username" id="username">Usuário</h3>
+      </div>
+      <hr>
+      
+      <a href="perfil.html" class="sub-menu-link">
+        <img src="assets/profile.png">
+        <p>Perfil</p>
+        <span>></span>
+      </a>
+      
+      <a href="dashboard.html" class="sub-menu-link">
+        <img src="assets/profile.png">
+        <p>Dashboard</p>
+        <span>></span>
+      </a>
+      
+      <a href="#" class="sub-menu-link">
+        <img src="assets/setting.png">
+        <p>Missões Diárias</p>
+        <span>></span>
+      </a>
+      
+      <a href="#" class="sub-menu-link">
+        <img src="assets/help.png">
+        <p>Ajuda</p>
+        <span>></span>
+      </a>
+
+      <a href="#" id="logoutButton" class="sub-menu-link">
+        <img src="assets/logout.png">
+        <p>Sair</p>
+        <span>></span>
+      </a>
+    </div>
   </div>
 
   <div id="openMissions" class="missions">
@@ -54,26 +96,37 @@
     </div>
   </div>
 
+  <main>
+    <div class="perfilMoedas">
+      <h2>💰 <span id="perfilMoedas"></span></h2>
+    </div>
+  </main>
+
   <script>
-    document.addEventListener("DOMContentLoaded", () => {
-  const usuario = JSON.parse(localStorage.getItem("usuario"));
+    let subMenu = document.getElementById("subMenu");
+    
+    function toggleMenu(){
+      subMenu.classList.toggle("open-menu");
+    }
 
-  if (!usuario || !usuario.id) {
-    document.getElementById("perfilNome").innerText = "Usuário não logado";
-    document.getElementById("perfilMoedas").innerText = "-";
-    return;
-  }
+    let openMissions = document.getElementById("openMissions");
+    
+    function toggleMissions(){
+      openMissions.classList.toggle("open-missions");
+    }
 
-  // Nome e moedas aparecem instantaneamente
-  document.getElementById("perfilNome").innerText = usuario.nome;
-  document.getElementById("perfilMoedas").innerText = usuario.moedas ?? 0;
-});
+    // Pega o usuário do localStorage
+    const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
 
-  </script>
+    // Pega o nome, ou "Usuário" como fallback
+    const nomeUsuario = usuario.nome || "Usuário";
 
+    // Atualiza o H3
+    document.getElementById("username").textContent = nomeUsuario;
+    </script>
 
+  <script src="perfil.js"></script>
   <script src="missions.js"></script>
-
   <script src="user-state.js"></script>
   
 </body>
