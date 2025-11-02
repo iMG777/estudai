@@ -1,11 +1,12 @@
-document.getElementById("quizForm").addEventListener("submit", async function (e) {
+// quiz.js
+document.getElementById("quizForm").addEventListener("submit", async function(e) {
   e.preventDefault();
 
   const resumo = document.getElementById("resumo")?.value.trim() || "";
   const topicos = document.getElementById("topicos")?.value.trim() || "";
 
-  const dificuldadeSelecionada = Array.from(document.querySelectorAll("input[name='dificuldade']:checked")).map(el => el.value);
-  const tiposSelecionados = Array.from(document.querySelectorAll("input[name='tipo']:checked")).map(el => el.value);
+  const dificuldade = Array.from(document.querySelectorAll("input[name='dificuldade']:checked")).map(el => el.value);
+  const tipoPergunta = Array.from(document.querySelectorAll("input[name='tipo']:checked")).map(el => el.value);
 
   const perguntasDiv = document.getElementById("perguntas");
   perguntasDiv.innerHTML = "<p>Gerando perguntas...</p>";
@@ -16,7 +17,7 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
     const response = await fetch("/api/generate-questions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ resumo, topicos, dificuldade: dificuldadeSelecionada, tipo: tiposSelecionados })
+      body: JSON.stringify({ resumo, topicos, dificuldade, tipo: tipoPergunta })
     });
 
     if (!response.ok) {
@@ -33,6 +34,7 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
     }
 
     perguntasDiv.innerHTML = "<h3>Perguntas Geradas:</h3>";
+
     const lista = document.createElement("ol");
 
     const criarRadio = (nome, valor) => {
@@ -40,19 +42,15 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
       const label = document.createElement("label");
       label.style.cursor = "pointer";
       label.style.display = "block";
-      label.style.padding = "8px 12px";
-      label.style.border = "1px solid transparent";
-      label.style.borderRadius = "6px";
+      label.style.padding = "6px 10px";
       label.style.marginBottom = "4px";
       label.style.userSelect = "none";
-
       const input = document.createElement("input");
       input.type = "radio";
       input.name = nome;
       input.value = valor;
-
       label.appendChild(input);
-      label.appendChild(document.createTextNode(" " + valor));
+      label.appendChild(document.createTextNode(valor));
       li.appendChild(label);
       return li;
     };
@@ -116,7 +114,6 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
 
       const respostas = data.questions.map((q, idx) => {
         let respostaUsuario = null;
-
         if (q.tipo === "multipla" || q.tipo === "vf") {
           const marcado = document.querySelector(`input[name="pergunta_${idx}"]:checked`);
           if (marcado) respostaUsuario = marcado.value;
@@ -124,7 +121,6 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
           const textarea = document.querySelector(`textarea[name="resposta_${idx}"]`);
           if (textarea) respostaUsuario = textarea.value.trim();
         }
-
         return {
           index: idx,
           tipo: q.tipo,
@@ -139,13 +135,7 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
         const response = await fetch("/api/submit-answers", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            respostas,
-            usuarioId,
-            dificuldade: dificuldadeSelecionada.join(", ") || "Não especificada",
-            tipo: tiposSelecionados.join(", ") || "Não especificado",
-            tema: resumo || topicos || "Geral"
-          })
+          body: JSON.stringify({ respostas, usuarioId })
         });
 
         if (!response.ok) {
@@ -153,34 +143,62 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
           throw new Error(`Erro na correção: ${response.status} - ${txt}`);
         }
 
-        const result = await response.json();
-
-        usuario.moedas = result.moedasTotais;
-        localStorage.setItem("usuario", JSON.stringify(usuario));
-
-        const resultadoDiv = document.createElement("div");
-        resultadoDiv.style.marginTop = "12px";
-        resultadoDiv.innerHTML = `
-          <strong>Resultado:</strong><br>
-          ✅ Acertos: ${result.acertos} / ${result.total}<br>
-          ❌ Erros: ${result.erros}<br>
-          💰 Total de moedas: ${result.moedasTotais}
-        `;
-
-        if (result.bonus > 0) {
-          resultadoDiv.innerHTML += `<br>🎉 Bônus: +${result.bonus} moedas por acertar tudo!`;
+        let result;
+        try {
+          result = await response.json();
+        } catch {
+          const text = await response.text();
+          console.error("Resposta do servidor não é JSON:", text);
+          throw new Error("Resposta do servidor não é JSON");
         }
 
-        perguntasDiv.querySelectorAll(".resposta").forEach(r => r.style.display = "block");
+        let totalMoedas = result.moedasTotais;
+        let bonus = 0;
+        let moedasGanhas = result.acertos;
 
+        if (result.acertos === result.total) {
+          bonus = 50;
+          totalMoedas += bonus;
+        }
+
+        usuario.moedas = totalMoedas;
+        localStorage.setItem("usuario", JSON.stringify(usuario));
+
+        function numeroParaEmoji(n) {
+          if (n === 10) return "🔟";
+          const emojis = ["0️⃣","1️⃣","2️⃣","3️⃣","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣"];
+          if (n < 10) return emojis[n];
+          return n.toString().split("").map(d => emojis[parseInt(d)]).join("");
+        }
+
+        // Container do resultado com borda
+        const resultadoDiv = document.createElement("div");
+        resultadoDiv.style.border = "2px solid white";
+        resultadoDiv.style.borderRadius = "10px";
+        resultadoDiv.style.padding = "12px";
+        resultadoDiv.style.marginTop = "12px";
+        resultadoDiv.style.backgroundColor = "transparent";
+
+        // Lista de detalhes
         const detalhesUL = document.createElement("ul");
         result.details.forEach(d => {
           const li = document.createElement("li");
-          li.innerHTML = `Q${(d.index ?? 0) + 1}: <strong>${d.acertou ? "Correta" : "Incorreta"}</strong> — Sua resposta: "${d.usuario}"`;
-          if (!d.acertou) li.style.color = "crimson";
+          const numeroEmoji = numeroParaEmoji((d.index ?? 0) + 1);
+          li.innerHTML = `${numeroEmoji}: <strong>${d.acertou ? "Correta" : "Incorreta"}</strong> — Sua resposta: "${d.usuario}"`;
+          li.style.color = d.acertou ? "green" : "crimson";
           detalhesUL.appendChild(li);
         });
         resultadoDiv.appendChild(detalhesUL);
+
+        // Estatísticas
+        const stats = document.createElement("div");
+        stats.style.marginTop = "8px";
+        stats.innerHTML = `✅ Acertos: ${result.acertos} / ${result.total} <br> ❌ Erros: ${result.erros} <br>
+          💰 Moedas ganhas: ${moedasGanhas}`;
+        if (bonus > 0) stats.innerHTML += `<br>🏆 Bônus: +${bonus} moedas por acertar tudo!`;
+        stats.innerHTML += `<br>💰 Total de moedas: ${totalMoedas}`;
+
+        resultadoDiv.appendChild(stats);
 
         const existing = document.getElementById("resultado-geral");
         if (existing) existing.remove();
