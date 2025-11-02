@@ -1,4 +1,3 @@
-// quiz.js — versão atualizada (envia dificuldade, tipo e tema para o backend)
 document.getElementById("quizForm").addEventListener("submit", async function (e) {
   e.preventDefault();
 
@@ -142,7 +141,7 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
       });
 
       try {
-        // envia para o backend (agora incluindo dificuldade, tipo e tema)
+        // envia para o backend
         const response = await fetch("/api/submit-answers", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -162,22 +161,7 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
 
         const result = await response.json();
 
-        let totalMoedas = result.moedasTotais;
-        let bonus = 0;
-
-        // bônus se acertou todas
-        if (result.acertos === result.total) {
-          bonus = 0;
-          const bonusRes = await fetch("/api/adicionar-moedas", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ usuarioId, moedas: bonus })
-          });
-          const bonusData = await bonusRes.json();
-          if (bonusData.success) {
-            totalMoedas = bonusData.novasMoedas;
-          }
-        }
+        const totalMoedas = result.moedasTotais; // já inclui bônus do backend
 
         usuario.moedas = totalMoedas;
         localStorage.setItem("usuario", JSON.stringify(usuario));
@@ -192,8 +176,8 @@ document.getElementById("quizForm").addEventListener("submit", async function (e
           💰 Total de moedas: ${totalMoedas}
         `;
 
-        if (bonus > 0) {
-          resultadoDiv.innerHTML += `<br>🎉 Bônus: +${bonus} moedas por acertar tudo!`;
+        if (result.bonus > 0) {
+          resultadoDiv.innerHTML += `<br>🎉 Bônus: +${result.bonus} moedas por acertar tudo!`;
         }
 
         // exibe respostas corretas

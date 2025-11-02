@@ -5,13 +5,12 @@ import dotenv from "dotenv";
 import cors from "cors";
 import nodeFetch from "node-fetch";
 import bcrypt from "bcrypt";
-import pool from "./db.js";
+import pool from "./db.js"; // conexão PostgreSQL
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
-
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -46,11 +45,14 @@ function extractTextFromGeminiResponse(apiResponse) {
   try {
     if (!apiResponse) return "";
     if (typeof apiResponse === "string") return apiResponse.trim();
-    if (apiResponse.candidates?.[0]?.content?.parts?.[0]?.text)
-      return apiResponse.candidates[0].content.parts[0].text.trim();
+    if (apiResponse.candidates && apiResponse.candidates.length > 0) {
+      const parts = apiResponse.candidates[0].content?.parts;
+      if (parts && parts.length > 0 && parts[0].text) return parts[0].text.trim();
+    }
     if (apiResponse.output && typeof apiResponse.output === "string") return apiResponse.output.trim();
     return "";
-  } catch {
+  } catch (err) {
+    console.error("Erro ao extrair texto do Gemini:", err);
     return "";
   }
 }
@@ -61,215 +63,294 @@ function parseQuestionsFromText(text) {
     const maybe = text.replace(/```json/i, "").replace(/```/g, "").trim();
     const j = JSON.parse(maybe);
     if (Array.isArray(j.questions)) return j.questions;
-  } catch {
-    return [];
+  } catch (e) {
+    const start = text.indexOf("{");
+    const end = text.lastIndexOf("}");
+    if (start !== -1 && end !== -1 && end > start) {
+      const sub = text.substring(start, end + 1);
+      try {
+        const j2 = JSON.parse(sub);
+        if (Array.isArray(j2.questions)) return j2.questions;
+      } catch (e2) {
+        console.error("parseQuestionsFromText: não conseguiu parsear JSON extraído", e2);
+      }
+    }
+    console.error("parseQuestionsFromText: JSON parse falhou", e);
   }
   return [];
 }
 
-/* ======== ROTA: GERAR PERGUNTAS ======== */
+/* ======== ROTA: GERAR PERGUNTAS (Gemini) ======== */
 app.post("/api/generate-questions", async (req, res) => {
   const { resumo = "", topicos = "", dificuldade = [], tipo = [] } = req.body;
+
   const prompt = `
-Gere 10 perguntas de ${Array.isArray(tipo) ? tipo.join(", ") : tipo}
+Gere 10 perguntas de ${Array.isArray(tipo) ? tipo.join(", ") : tipo} 
 com nível de dificuldade: ${Array.isArray(dificuldade) ? dificuldade.join(", ") : dificuldade}.
 Resumo: ${resumo}
 Tópicos: ${topicos}
-Retorne APENAS JSON no formato:
+
+⚠️ Retorne APENAS JSON válido no formato:
 {
   "questions": [
-    {"tipo": "multipla" | "vf" | "discursiva", "pergunta": "texto", "alternativas": ["A","B"], "resposta": "correta"}
+    {
+      "tipo": "multipla" | "vf" | "discursiva",
+      "pergunta": "texto da pergunta",
+      "alternativas": ["A", "B", "C", "D"],
+      "resposta": "resposta correta ou 'Verdadeiro/Falso'"
+    }
   ]
-}`;
+}
+`;
 
   try {
     const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) throw new Error("GEMINI_API_KEY não configurada em .env");
+
     const response = await safeFetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+        }),
       }
     );
 
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`Erro da API Gemini: ${response.status} - ${errText}`);
+    }
+
     const data = await response.json();
-    const rawText = extractTextFromGeminiResponse(data);
+    const rawText = extractTextFromGeminiResponse(data) || JSON.stringify(data);
     const questions = parseQuestionsFromText(rawText);
+
     res.json({ questions, rawText });
   } catch (err) {
     console.error("Erro em /api/generate-questions:", err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: err.message || String(err) });
   }
 });
 
-
-/* ======== ROTA: CORRIGIR RESPOSTAS ======== */
+/* ======== ROTA: CORRIGIR RESPOSTAS E SALVAR RESULTADO ======== */
 app.post("/api/submit-answers", async (req, res) => {
-  const { usuarioId, respostas, tema, dificuldade, tipo } = req.body;
-
-  console.log("📥 [API] Recebido em /api/submit-answers:");
-  console.log("usuarioId:", usuarioId);
-  console.log("tema:", tema);
-  console.log("dificuldade:", dificuldade);
-  console.log("tipo:", tipo);
-  console.log("qtd respostas:", Array.isArray(respostas) ? respostas.length : "N/A");
-
-  if (!usuarioId || !Array.isArray(respostas)) {
-    console.error("❌ Dados inválidos recebidos no body:", req.body);
-    return res.status(400).json({ error: "Dados inválidos" });
-  }
-
   try {
-    // --- Etapa 1: cálculo de acertos
+    const {
+      respostas,
+      usuarioId,
+      tema = "Geral",
+      dificuldade = [],
+      tipo = [],
+      quizId = null
+    } = req.body;
+
+    if (!Array.isArray(respostas))
+      return res.status(400).json({ error: "Campo 'respostas' precisa ser um array" });
+    if (!usuarioId)
+      return res.status(400).json({ error: "Campo 'usuarioId' é obrigatório" });
+
     let acertos = 0;
-    const detalhes = respostas.map((r, i) => {
-      const correta = (r.respostaCorreta || "").toString().trim().toLowerCase();
-      const usuario = (r.respostaUsuario || "").toString().trim().toLowerCase();
-      const acertou = correta === usuario;
+    const details = [];
+
+    respostas.forEach((r) => {
+      const idx = r.index ?? null;
+      const corretaRaw = (r.respostaCorreta ?? "").toString();
+      const usuarioRaw = (r.respostaUsuario ?? "").toString();
+
+      const usuarioNorm = normalizarTexto(usuarioRaw);
+      const partesCorretas = corretaRaw
+        .split(/[,/;]| ou /i)
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .map((s) => normalizarTexto(s));
+
+      const vf = { v: "verdadeiro", verdadeiro: "verdadeiro", f: "falso", falso: "falso" };
+
+      let acertou = false;
+      let bestSimilarity = 0;
+      let matchedCorreta = partesCorretas.length ? partesCorretas[0] : "";
+
+      for (const c of partesCorretas) {
+        const corretaFinal = vf[c] || c;
+        const usuarioFinal = vf[usuarioNorm] || usuarioNorm;
+
+        if (usuarioFinal === corretaFinal) {
+          acertou = true;
+          bestSimilarity = 1;
+          matchedCorreta = corretaFinal;
+          break;
+        }
+
+        const sim = similaridade(usuarioFinal, corretaFinal);
+        if (sim > bestSimilarity) {
+          bestSimilarity = sim;
+          matchedCorreta = corretaFinal;
+        }
+        if (sim >= 0.45) {
+          acertou = true;
+          break;
+        }
+      }
+
       if (acertou) acertos++;
-      return {
-        index: i,
+
+      details.push({
+        index: idx,
         pergunta: r.pergunta,
-        correta: r.respostaCorreta,
-        usuario: r.respostaUsuario,
+        correta: matchedCorreta,
+        usuario: usuarioRaw,
+        similarity: bestSimilarity,
         acertou,
-      };
+      });
     });
 
+    // 🧮 Cálculos principais
     const total = respostas.length;
     const erros = total - acertos;
+    const moedasGanhas = acertos;
+    const percentual = total > 0 ? ((acertos / total) * 100).toFixed(2) : 0;
+
+    // 🏆 Bônus de +50 se acertar tudo
     const bonus = acertos === total ? 50 : 0;
-    const moedasGanhas = acertos + bonus;
 
-    console.log(`✅ Acertos: ${acertos}/${total} | 💰 +${moedasGanhas} moedas`);
+    // 🪙 Atualiza moedas do usuário
+    const userResult = await pool.query("SELECT moedas FROM usuarios WHERE id = $1", [usuarioId]);
+    let moedasAtuais = userResult.rows[0]?.moedas || 0;
+    const moedasTotais = moedasAtuais + moedasGanhas + bonus;
 
-    // --- Etapa 2: atualizar moedas do usuário
-    const updateUser = await pool.query(
-      "UPDATE usuarios SET moedas = moedas + $1 WHERE id = $2 RETURNING moedas",
-      [moedasGanhas, usuarioId]
+    await pool.query("UPDATE usuarios SET moedas = $1 WHERE id = $2", [moedasTotais, usuarioId]);
+
+    // Normaliza textos
+    const dificuldadeStr = Array.isArray(dificuldade)
+      ? dificuldade.join(", ") || "Não especificada"
+      : dificuldade || "Não especificada";
+
+    const tipoStr = Array.isArray(tipo)
+      ? tipo.join(", ") || "Não especificado"
+      : tipo || "Não especificado";
+
+    // 💾 Insere resultado corretamente no banco
+    await pool.query(
+      `INSERT INTO resultados_quiz 
+        (usuario_id, quiz_id, tema, dificuldade, tipos, acertos, erros, moedas, bonus, percentual_acertos, data_realizacao)
+       VALUES ($1, $2, $3, ARRAY[$4]::text[], ARRAY[$5]::text[], $6, $7, $8, $9, $10, CURRENT_TIMESTAMP)`,
+      [
+        usuarioId,
+        quizId,
+        tema,
+        dificuldadeStr,
+        tipoStr,
+        acertos,
+        erros,
+        moedasGanhas,
+        bonus,
+        percentual,
+      ]
     );
 
-    if (!updateUser.rows.length) {
-      console.error("❌ Usuário não encontrado no banco ao atualizar moedas!");
-      return res.status(404).json({ error: "Usuário não encontrado" });
-    }
-
-    const moedasTotais = updateUser.rows[0].moedas;
-    console.log(`🪙 Novo saldo de moedas: ${moedasTotais}`);
-
-    // --- Etapa 3: salvar resultado no histórico
-    await pool.query(
-  `INSERT INTO resultados_quiz 
-    (usuario_id, tema, acertos, erros, bonus, dificuldade, tipos, moedas, data_realizacao)
-   VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())`,
-  [
-    usuarioId,
-    tema || "Geral",
-    acertos,
-    erros,
-    bonus,
-    [dificuldade || "Não especificada"],
-    [tipo || "Não especificado"],
-    moedasGanhas // 👈 adiciona o total de moedas ganhas na rodada
-  ]
-);
-
-
-    console.log("📊 Resultado salvo com sucesso no banco ✅");
-
-    // --- Etapa final: resposta ao frontend
+    // ✅ Retorna dados completos
     res.json({
-      sucesso: true,
+      total,
       acertos,
       erros,
-      total,
-      bonus,
+      percentual: Number(percentual),
       moedasGanhas,
+      bonus,
       moedasTotais,
-      details: detalhes,
+      dificuldade: dificuldadeStr,
+      tipo: tipoStr,
+      details,
     });
   } catch (err) {
-    console.error("💥 Erro interno em /api/submit-answers:", err);
-    res.status(500).json({ error: "Erro interno ao processar respostas." });
+    console.error("❌ Erro ao corrigir e salvar resultado:", err);
+    res.status(500).json({ error: "Erro ao corrigir e salvar resultado do quiz." });
   }
 });
 
-
-/* ======== ROTAS DE USUÁRIO ======== */
-app.post("/api/signup", async (req, res) => {
+/* ======== ROTA: BUSCAR RESULTADOS ======== */
+app.get("/api/resultados/:usuarioId", async (req, res) => {
   try {
-    const { nome, email, senha } = req.body;
-    const hash = await bcrypt.hash(senha, 10);
-    const result = await pool.query(
-      "INSERT INTO usuarios (nome, email, senha) VALUES ($1,$2,$3) RETURNING id,nome,email,moedas",
-      [nome, email, hash]
-    );
-    res.json({ usuario: result.rows[0] });
-  } catch {
-    res.status(500).json({ error: "Erro ao cadastrar" });
-  }
-});
+    const { usuarioId } = req.params;
 
-// === Buscar histórico de quizzes do usuário ===
-app.get("/api/resultados/:usuario_id", async (req, res) => {
-  const { usuario_id } = req.params;
-
-  try {
     const result = await pool.query(
-      `SELECT id, tema, dificuldade, tipos, acertos, erros, bonus, moedas, data_realizacao
+      `SELECT id, tema, dificuldade, tipos, acertos, erros, moedas, bonus,
+              percentual_acertos, TO_CHAR(data_realizacao, 'DD/MM/YYYY HH24:MI') AS data_realizacao
        FROM resultados_quiz
        WHERE usuario_id = $1
        ORDER BY data_realizacao DESC`,
-      [usuario_id]
+      [usuarioId]
     );
 
     res.json(result.rows);
   } catch (err) {
-    console.error("Erro ao buscar resultados:", err);
-    res.status(500).json({ error: "Erro interno ao buscar resultados" });
+    console.error("❌ Erro ao buscar resultados:", err);
+    res.status(500).json({ error: "Erro ao buscar resultados do usuário." });
   }
 });
 
+/* ======== CADASTRO E LOGIN ======== */
+function validarEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
 
-// === Buscar dados do usuário pelo ID ===
-app.get("/api/usuario/:id", async (req, res) => {
-  const { id } = req.params;
-
+app.post("/api/signup", async (req, res) => {
   try {
-    const result = await pool.query(
-      "SELECT id, nome, moedas, qtdbonus, acertos, erros FROM usuarios WHERE id = $1",
-      [id]
-    );
+    const { nome, email, senha } = req.body;
+    const erros = [];
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Usuário não encontrado" });
+    if (!nome) erros.push("Nome é obrigatório.");
+    if (!email) erros.push("Email é obrigatório.");
+    else if (!validarEmail(email)) erros.push("Email inválido.");
+    if (!senha) erros.push("Senha é obrigatória.");
+    else if (senha.length < 6) erros.push("Senha muito curta. Use pelo menos 6 caracteres.");
+
+    const existing = await pool.query("SELECT * FROM usuarios WHERE email = $1 OR nome = $2", [email, nome]);
+    if (existing.rows.length > 0) {
+      const u = existing.rows[0];
+      if (u.email === email) erros.push("Este e-mail já está cadastrado.");
+      if (u.nome === nome) erros.push("Este nome de usuário já está em uso.");
     }
 
-    res.json(result.rows[0]);
+    if (erros.length > 0) return res.status(400).json({ erros });
+
+    const hash = await bcrypt.hash(senha, 10);
+    const result = await pool.query(
+      "INSERT INTO usuarios (nome, email, senha) VALUES ($1, $2, $3) RETURNING *",
+      [nome, email, hash]
+    );
+
+    const usuario = result.rows[0];
+    delete usuario.senha;
+    res.json({ usuario });
   } catch (err) {
-    console.error("Erro ao buscar usuário:", err);
-    res.status(500).json({ error: "Erro interno ao buscar usuário" });
+    console.error("Erro em /api/signup:", err);
+    res.status(500).json({ error: "Erro ao criar conta." });
   }
 });
-
 
 app.post("/api/login", async (req, res) => {
   try {
     const { email, senha } = req.body;
-    const result = await pool.query("SELECT * FROM usuarios WHERE email=$1", [email]);
+    if (!email || !senha) return res.status(400).json({ error: "Preencha todos os campos." });
+
+    const result = await pool.query("SELECT * FROM usuarios WHERE email = $1", [email]);
     const user = result.rows[0];
-    if (!user) return res.status(404).json({ error: "Usuário não encontrado" });
+    if (!user) return res.status(404).json({ error: "Usuário não encontrado." });
+
     const valid = await bcrypt.compare(senha, user.senha);
-    if (!valid) return res.status(401).json({ error: "Senha incorreta" });
+    if (!valid) return res.status(401).json({ error: "Senha incorreta." });
+
     delete user.senha;
     res.json({ usuario: user });
-  } catch {
-    res.status(500).json({ error: "Erro no login" });
+  } catch (err) {
+    console.error("Erro em /api/login:", err);
+    res.status(500).json({ error: "Erro ao fazer login" });
   }
 });
 
-/* ======== START ======== */
+/* ======== INICIAR SERVIDOR ======== */
 app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
 });
