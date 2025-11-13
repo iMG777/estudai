@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="shortcut icon" href="assets/logokbeca.ico" type="image/x-icon">
+  <link rel="stylesheet" href="sign-up.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <title>Sign Up</title>
+</head>
+<body>
+  <form id="signupForm">
+  <div id="login">
+    <h1 class="sign-in">Sign Up</h1>
+
+    <!-- Botões sociais -->
+    <div class="social-login">
+      <i id="googleSignIn" class="fab fa-google icon-social"></i>
+      <i id="facebookSignIn" class="fab fa-facebook-f icon-social"></i>
+    </div>
+
+    <div id="sign-in">
+      <input type="text" id="nome" name="nome" placeholder="Nome de Usuário" required>
+      <span id="error-username" class="error-msg"></span>
+
+      <input type="email" id="email" name="email" placeholder="Email" required>
+      <span id="error-email" class="error-msg"></span>
+
+      <input type="password" id="senha" name="senha" placeholder="Senha" required>
+      <span id="error-password" class="error-msg"></span>
+    </div>
+
+    <button type="submit" class="criar">CRIAR</button>
+  </div>
+</form>
+
+<!-- SDKs -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script async defer crossorigin="anonymous" src="https://connect.facebook.net/pt_BR/sdk.js"></script>
+<script src="signup.js"></script>
+
+</body>
+</html>

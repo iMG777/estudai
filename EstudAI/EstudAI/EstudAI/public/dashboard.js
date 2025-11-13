@@ -1,3 +1,4 @@
+// dashboard.js
 document.addEventListener("DOMContentLoaded", async () => {
   await atualizarUsuario();
   await carregarHistorico();
@@ -43,10 +44,6 @@ async function carregarHistorico() {
 
     quizHistory.innerHTML = "";
     data.forEach(r => {
-      // Verifica e trata a dificuldade e tipos, caso sejam strings separadas por vírgulas
-      const dificuldade = (r.dificuldade || "").split(",").map(d => d.trim());
-      const tipos = (r.tipos || "").split(",").map(t => t.trim());
-
       const card = document.createElement("div");
       card.className = "quiz-card";
       card.innerHTML = `
@@ -54,8 +51,8 @@ async function carregarHistorico() {
         <p><strong>Acertos:</strong> ${r.acertos ?? 0} / ${(r.acertos ?? 0) + (r.erros ?? 0)}</p>
         <p class="bonus">💰 Bônus: ${r.bonus ?? 0}</p>
         <p class="tema">Tema: ${r.tema || "—"}</p>
-        <p class="dificuldade">Dificuldade: ${dificuldade.join(", ")}</p>
-        <p class="tipos">Tipo: ${tipos.join(", ")}</p>
+        <p class="dificuldade">Dificuldade: ${(r.dificuldade || []).join(", ")}</p>
+        <p class="tipos">Tipo: ${(r.tipos || []).join(", ")}</p>
         <p class="data">🕒 ${new Date(r.data_realizacao).toLocaleString("pt-BR")}</p>
       `;
       quizHistory.appendChild(card);

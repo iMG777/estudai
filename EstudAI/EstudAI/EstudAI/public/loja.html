@@ -3,16 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EstudAI — Dashboard</title>
+  <title>EstudAI</title>
   <link rel="shortcut icon" href="assets/logokbeca.ico" type="image/x-icon">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="global.css">
-  <link rel="stylesheet" href="dashboard.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
 <body>
   <div class="home-bar">
     <nav>
-      <a href="index.html">INICIO</a>
+      <a href="index.html" class="home">INICIO</a>
       <a href="dashboard.html">DASHBOARD</a>
       <a href="loja.html">LOJA</a>
       <h1 class="logo">EstudAI</h1>
@@ -20,29 +20,44 @@
     </nav>
   </div>
 
+  <div class="login">
+    <a href="sign-in.html" class="login-link">LOGIN</a>
+  </div>
+  
   <img src="assets/user.png" id="userProfile" onclick="toggleMenu()">
+  
   <div id="subMenu" class="sub-menu-wrap">
     <div class="sub-menu">
       <div class="user-info">
         <img src="assets/user.png">
-        <h3 id="username">Usuário</h3>
+        <h3 class="username" id="username">Usuário</h3>
       </div>
       <hr>
+      
       <a href="perfil.html" class="sub-menu-link">
         <img src="assets/profile.png">
         <p>Perfil</p>
         <span>></span>
       </a>
+      
       <a href="dashboard.html" class="sub-menu-link">
         <img src="assets/profile.png">
         <p>Dashboard</p>
         <span>></span>
       </a>
+      
       <a href="#" class="sub-menu-link">
         <img src="assets/setting.png">
         <p>Missões Diárias</p>
         <span>></span>
       </a>
+      
+      <a href="#" class="sub-menu-link">
+        <img src="assets/help.png">
+        <p>Ajuda</p>
+        <span>></span>
+      </a>
+
       <a href="#" id="logoutButton" class="sub-menu-link">
         <img src="assets/logout.png">
         <p>Sair</p>
@@ -50,35 +65,37 @@
       </a>
     </div>
   </div>
-
-  <main class="dashboard-container">
-    <div class="dashboard-header">
-      <h1>📊 Histórico de Quizzes</h1>
-      <div class="moedas-info">💰 Moedas: <span id="moedas">0</span></div>
-    </div>
-    <button id="btnRecarregar" class="btn-recarga" onclick="carregarHistorico()">Recarregar histórico</button>
-    <br>
-    <section id="quizHistory" class="quiz-history"><br></section>
-  </main>
-
+  
   <div id="openMissions" class="missions">
     <button id="btnMissions" class="btnMissions" onclick="toggleMissions()">
       <img src="assets/missions.png" alt="Missões">
     </button>
+
     <div class="missions-container">
       <h3>🎯 MISSÕES DIÁRIAS</h3>
+
       <div class="mission-item">
-        <label><input type="checkbox" id="studyMission" disabled><span>Estude por 1 hora</span></label>
+        <label>
+          <input type="checkbox" id="studyMission" disabled>
+          <span>Estude por 1 hora</span>
+        </label>
       </div>
+
       <div class="mission-item">
-        <label><input type="checkbox" id="quizMission" disabled><span>Responda 1 quiz</span></label>
+        <label>
+          <input type="checkbox" id="quizMission" disabled>
+          <span>Responda 1 quiz</span>
+        </label>
       </div>
     </div>
   </div>
-
+  
+  <main>
+  </main>
+  
   <script src="user-state.js"></script>
   <script src="missions.js"></script>
-  <script src="dashboard.js"></script>
   <script src="global.js"></script>
+  
 </body>
 </html>

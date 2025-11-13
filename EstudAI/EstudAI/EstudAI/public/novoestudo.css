@@ -1,0 +1,97 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=SUSE+Mono:ital,wght@0,100..800;1,100..800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Libertinus+Keyboard&family=SUSE+Mono:ital,wght@0,100..800;1,100..800&display=swap');
+
+main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: calc(100vh - 60px);
+    padding-top: 2rem;
+    
+}
+
+#stopwatch {
+    background-color: #222222;
+    padding: 1.5rem;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#timer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 24px;
+    background-color: #222222;
+    color: #fff;
+    width: 250px;
+    height: 250px;
+    border: 3px solid #9f6bff;
+    border-radius: 100%;
+    margin-bottom: 1.2rem;
+}
+
+#actions {
+    display: flex;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+#actions button {
+    flex: 1;
+    height: 40px;
+    font-size: 1rem;
+    border-radius: 4px;
+    border: none;
+    background-color: #e0e7ff;
+    color: #262626;
+    cursor: pointer;
+    transition: background-color .2s ease-in;
+}
+
+#actions button:hover {
+    background-color: #c4b5fd;
+    transform: translateY(3px);
+    box-shadow: 0 12px 20px rgba(0, 0, 0, 0.8);
+}
+
+#marks-list{
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+    color: #ffffff;
+}
+
+#marks-list p:first-child{
+    margin-top: 1.5rem;
+}
+
+.encerrar {
+    background-color: transparent;
+    color: #fff;
+    border-radius: 5px;
+    border: 2px solid #fff;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-top: 5rem;
+    width: 250px; 
+    height: 100px;
+
+    display: flex;
+    align-items: center; 
+    justify-content: center;
+    text-align: center;
+    text-decoration: none;
+    font-family: "SUSE Mono";
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.encerrar:hover {
+    transform: translateY(3px);
+    box-shadow: 0 12px 20px rgba(0, 0, 0, 0.8);
+}

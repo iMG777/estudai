@@ -169,11 +169,12 @@ app.post("/api/submit-answers", async (req, res) => {
     acertos,
     erros,
     bonus,
-    dificuldade.length ? dificuldade.join(",") : "Não especificada",  // Converte array para string
-    tipo.length ? tipo.join(",") : "Não especificado",  // Converte array para string
+    [dificuldade || "Não especificada"],
+    [tipo || "Não especificado"],
     moedasGanhas // 👈 adiciona o total de moedas ganhas na rodada
   ]
 );
+
 
     console.log("📊 Resultado salvo com sucesso no banco ✅");
 
