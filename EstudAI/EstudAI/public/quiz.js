@@ -55,7 +55,6 @@ document.getElementById("quizForm").addEventListener("submit", async function(e)
       return li;
     };
 
-    // === Criação das perguntas ===
     data.questions.forEach((q, idx) => {
       const item = document.createElement("li");
       item.dataset.index = idx;
@@ -68,7 +67,6 @@ document.getElementById("quizForm").addEventListener("submit", async function(e)
         p.textContent = perguntaText;
         item.appendChild(p);
 
-        // Alternativas
         if (q.tipo === "multipla" && Array.isArray(q.alternativas)) {
           const ul = document.createElement("ul");
           q.alternativas.forEach((alt) => ul.appendChild(criarRadio(`pergunta_${idx}`, alt)));
@@ -87,13 +85,10 @@ document.getElementById("quizForm").addEventListener("submit", async function(e)
           item.appendChild(textarea);
         }
 
-        // Div oculta com a resposta correta
         if (q.resposta) {
           const ans = document.createElement("div");
           ans.classList.add("resposta");
           ans.style.display = "none";
-          ans.style.marginTop = "4px";
-          ans.style.fontStyle = "italic";
           ans.textContent = `Resposta correta: ${q.resposta}`;
           item.appendChild(ans);
         }
@@ -104,7 +99,7 @@ document.getElementById("quizForm").addEventListener("submit", async function(e)
 
     perguntasDiv.appendChild(lista);
 
-    // === Botão enviar respostas ===
+    // Botão enviar respostas
     const submitBtn = document.createElement("button");
     submitBtn.type = "button";
     submitBtn.textContent = "Enviar Respostas";
@@ -140,13 +135,7 @@ document.getElementById("quizForm").addEventListener("submit", async function(e)
         const response = await fetch("/api/submit-answers", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            respostas,
-            usuarioId,
-            tema: topicos || resumo || "Geral",
-            dificuldade,
-            tipo: tipoPergunta
-          })
+          body: JSON.stringify({ respostas, usuarioId })
         });
 
         if (!response.ok) {
@@ -175,12 +164,6 @@ document.getElementById("quizForm").addEventListener("submit", async function(e)
         usuario.moedas = totalMoedas;
         localStorage.setItem("usuario", JSON.stringify(usuario));
 
-        // === Exibe respostas corretas ===
-        perguntasDiv.querySelectorAll(".resposta").forEach(r => {
-          r.style.display = "block";
-        });
-
-        // === Resultado geral ===
         function numeroParaEmoji(n) {
           if (n === 10) return "🔟";
           const emojis = ["0️⃣","1️⃣","2️⃣","3️⃣","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣"];
@@ -188,42 +171,30 @@ document.getElementById("quizForm").addEventListener("submit", async function(e)
           return n.toString().split("").map(d => emojis[parseInt(d)]).join("");
         }
 
+        // Container do resultado com borda
         const resultadoDiv = document.createElement("div");
-resultadoDiv.id = "resultado-geral";
-resultadoDiv.style.border = "2px solid white";
-resultadoDiv.style.borderRadius = "10px";
-resultadoDiv.style.padding = "12px";
-resultadoDiv.style.marginTop = "12px";
-resultadoDiv.style.backgroundColor = "transparent";
+        resultadoDiv.style.border = "2px solid white";
+        resultadoDiv.style.borderRadius = "10px";
+        resultadoDiv.style.padding = "12px";
+        resultadoDiv.style.marginTop = "12px";
+        resultadoDiv.style.backgroundColor = "transparent";
 
-// 🎯 Título e subtítulo
-const titulo = document.createElement("h2");
-titulo.textContent = "🎯 Resultado do Quiz";
-titulo.style.textAlign = "center";
-titulo.style.marginBottom = "8px";
+        // Lista de detalhes
+        const detalhesUL = document.createElement("ul");
+        result.details.forEach(d => {
+          const li = document.createElement("li");
+          const numeroEmoji = numeroParaEmoji((d.index ?? 0) + 1);
+          li.innerHTML = `${numeroEmoji}: <strong>${d.acertou ? "Correta" : "Incorreta"}</strong> — Sua resposta: "${d.usuario}"`;
+          li.style.color = d.acertou ? "green" : "crimson";
+          detalhesUL.appendChild(li);
+        });
+        resultadoDiv.appendChild(detalhesUL);
 
-const subtitulo = document.createElement("h3");
-subtitulo.textContent = "📋 Respostas:";
-subtitulo.style.marginBottom = "10px";
-
-resultadoDiv.appendChild(titulo);
-resultadoDiv.appendChild(subtitulo);
-
-// === Lista de respostas ===
-const detalhesUL = document.createElement("ul");
-result.details.forEach(d => {
-  const li = document.createElement("li");
-  const numeroEmoji = numeroParaEmoji((d.index ?? 0) + 1);
-  li.innerHTML = `${numeroEmoji}: <strong>${d.acertou ? "Correta" : "Incorreta"}</strong> — Sua resposta: "${d.usuario}"`;
-  li.style.color = d.acertou ? "green" : "crimson";
-  detalhesUL.appendChild(li);
-});
-resultadoDiv.appendChild(detalhesUL);
-
-
+        // Estatísticas
         const stats = document.createElement("div");
         stats.style.marginTop = "8px";
-        stats.innerHTML = `💰 Moedas ganhas: ${moedasGanhas}`;
+        stats.innerHTML = `✅ Acertos: ${result.acertos} / ${result.total} <br> ❌ Erros: ${result.erros} <br>
+          💰 Moedas ganhas: ${moedasGanhas}`;
         if (bonus > 0) stats.innerHTML += `<br>🏆 Bônus: +${bonus} moedas por acertar tudo!`;
         stats.innerHTML += `<br>💰 Total de moedas: ${totalMoedas}`;
 

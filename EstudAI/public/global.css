@@ -41,8 +41,9 @@ body {
 }
 
 .home-bar a:hover {
-  text-decoration: underline;
+  text-decoration: none;
   z-index: 100;
+  font-size: 20px;
 }
 
 .login {
@@ -332,6 +333,5 @@ body {
 
 .home-bar a.active {
   color: #9f6bff; /* cor de destaque */
-  border-bottom: 2px solid #9f6bff; /* linha abaixo do link */
   font-weight: 700;
 }
